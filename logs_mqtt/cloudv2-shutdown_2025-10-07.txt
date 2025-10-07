@@ -1,0 +1,426 @@
+[2025-10-07 00:00:13]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:07:21]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:09:54]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 00:15:34]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 00:16:35]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:24:57]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 00:28:02]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 00:31:06]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 00:34:39]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:37:53]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:41:16]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 00:44:25]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:02:35]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:09:15]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:13:09]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:17:36]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:18:44]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:22:11]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:23:10]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:25:34]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:28:40]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:31:25]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:31:43]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:34:43]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:34:55]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 01:37:58]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:40:43]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:46:07]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:50:05]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 01:53:12]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:06:28]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:11:12]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:17:26]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:18:20]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:23:38]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:29:33]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:35:47]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:43:31]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:44:53]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:48:02]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:48:40]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:53:46]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:54:23]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:56:38]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 02:57:11]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 02:59:49]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 03:02:22]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:07:31]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:19:38]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:26:58]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:32:09]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:32:45]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 03:44:14]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:47:30]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:56:33]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 03:59:36]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:02:33]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:02:50]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:05:59]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:11:48]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:14:28]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:15:17]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:16:54]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:18:14]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:19:27]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:21:07]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:31:20]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:31:48]
+#28-NovaBahia_6--15-6wBVP9-scheduling_15-0-171-07/10/2025_04:31:44$
+
+[2025-10-07 04:37:05]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:40:58]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:44:31]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:47:08]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:47:10]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 04:53:38]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 04:56:42]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:02:01]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:04:35]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:05:02]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:06:56]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:07:31]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:10:07]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:12:28]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:13:43]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:20:45]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:22:58]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:25:21]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:28:47]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:37:41]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:40:43]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:46:44]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:50:03]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:53:28]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 05:55:02]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 05:56:47]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 06:02:46]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:03:10]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 06:05:37]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:10:53]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:21:19]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:30:28]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:38:28]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 06:39:40]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:45:48]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:47:28]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 06:49:08]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:58:17]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-159-06/10/2025_18:31:14$
+
+[2025-10-07 06:59:15]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:00:10]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:01:34]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:13:44]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:16:35]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:16:57]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:22:44]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:32:48]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:40:45]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:43:35]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 07:47:01]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:50:10]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 07:55:34]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:01:43]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:04:32]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:05:47]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:13:54]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:18:34]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:21:09]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:25:54]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:31:09]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:35:01]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:36:43]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:41:34]
+#28-PioneiraLEM_2-lucasriffel-14-fa7BXP-scheduling_14-0-269-07/10/2025_07:00:07$
+
+[2025-10-07 08:42:07]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 08:45:51]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-221-07/10/2025_08:45:48$
+
+[2025-10-07 08:59:55]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-221-07/10/2025_08:45:48$
+
+[2025-10-07 09:01:06]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 09:03:40]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 09:06:04]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-221-07/10/2025_08:45:48$
+
+[2025-10-07 09:08:49]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 09:17:58]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 09:27:29]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-221-07/10/2025_08:45:48$
+
+[2025-10-07 09:33:12]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+
+[2025-10-07 09:34:51]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-221-07/10/2025_08:45:48$
+
+[2025-10-07 09:36:28]
+#28-Savana_16-system_manager-30-0-manual-0-268-06/10/2025_06:14:50$
+

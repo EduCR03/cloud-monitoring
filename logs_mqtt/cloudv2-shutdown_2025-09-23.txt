@@ -1,0 +1,405 @@
+[2025-09-23 00:02:48]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:03:38]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 00:20:01]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:34:10]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:37:12]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:37:37]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:43:01]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:48:36]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 00:49:00]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:03:21]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:06:33]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:10:19]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:25:04]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:30:08]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 01:51:30]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:08:23]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:16:01]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:28:54]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:34:54]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:39:40]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:43:52]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:45:12]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:46:20]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:46:58]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-23 02:53:40]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 05:43:41]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 08:33:39]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 11:23:38]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 14:13:42]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 14:56:43]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 14:57:04]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 14:57:17]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 14:57:40]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:01:08]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:13:32]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:13:33]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:13:55]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:13:57]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:15:10]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:15:33]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:15:54]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:17:28]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:23:39]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:24:01]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:24:16]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:29:49]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:36:45]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:37:06]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:40:33]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-655-22/09/2025_07:49:18$
+
+[2025-09-23 15:43:39]
+#28-soilteste_1-system_manager-24-0-brownout-0-655-22/09/2025_17:23:14$
+
+[2025-09-23 15:46:10]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 15:55:55]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:01:44]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:04:46]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:18:27]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:21:23]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:27:21]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:48:57]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:55:10]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 16:59:19]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:01:54]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:06:36]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:08:44]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:10:00]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:14:16]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:16:14]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:28:23]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:43:30]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:44:41]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-09-23 17:50:03]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:50:50]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-09-23 17:52:51]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 17:54:05]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-09-23 18:00:29]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:06:54]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:16:01]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:18:15]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:30:14]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:35:43]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:51:05]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 18:57:11]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:00:20]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:09:26]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:12:20]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:25:54]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:32:47]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:39:09]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:48:21]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:50:01]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:51:41]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:55:24]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:56:57]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 19:57:50]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:01:45]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:02:33]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:08:42]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:11:57]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:18:06]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:44:28]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:53:25]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 20:56:30]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:05:14]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:08:35]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:19:40]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:21:50]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:26:24]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:27:59]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:30:56]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:37:16]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:40:27]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:43:40]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:46:53]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 21:50:03]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:13:50]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:18:55]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:21:34]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:35:36]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:38:35]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:47:24]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:55:30]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:57:18]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 22:59:32]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:02:50]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:04:05]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:07:24]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:08:33]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:10:45]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:11:29]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:14:39]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:15:59]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:28:18]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:31:50]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:39:54]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:40:15]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+
+[2025-09-23 23:53:02]
+#28-NovaBahia_6-soil_app-01-0-fernandoklein-0-97-23/09/2025_15:46:06$
+

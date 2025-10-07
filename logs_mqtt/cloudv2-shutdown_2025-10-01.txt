@@ -1,0 +1,708 @@
+[2025-10-01 08:51:43]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 08:54:18]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 08:55:16]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:00:25]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:02:29]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:03:32]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 09:05:58]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:08:50]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:22:28]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:25:19]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:30:43]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 09:37:30]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:41:19]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:41:33]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 09:49:04]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:01:12]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:10:44]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:16:20]
+#28-Savana_16-system_manager-30-0-manual-0-88-01/10/2025_07:41:15$
+
+[2025-10-01 10:16:39]
+#28-Savana_16-system_manager-30-0-manual-0-88-01/10/2025_07:41:15$
+
+[2025-10-01 10:20:27]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 10:26:23]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 10:32:06]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:35:27]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:41:55]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:44:32]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 10:53:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 10:56:40]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:00:18]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:02:06]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:05:36]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:11:34]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:13:39]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:15:29]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:18:37]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:21:53]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:26:32]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:30:55]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:36:58]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:40:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:41:17]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:43:42]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:45:50]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:46:11]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:49:48]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 11:52:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:55:52]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 11:56:51]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 12:15:13]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 12:18:11]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 12:21:52]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 12:26:20]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 12:26:21]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 12:32:30]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 12:47:33]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 12:50:48]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 12:56:56]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 13:03:02]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 13:20:42]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 13:29:47]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 13:38:56]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 13:40:26]
+#28-Savana_16-system_manager-30-0-pivot_without_water-0-182-01/10/2025_13:40:22$
+
+[2025-10-01 13:40:27]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 13:52:53]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 13:59:02]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:00:10]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 14:02:12]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:06:19]
+#28-PioneiraLEM_2-lucasriffel-14-B84o1A-scheduling_14-0-655-01/10/2025_06:00:02$
+
+[2025-10-01 14:08:22]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:33:15]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:35:47]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:47:13]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:49:42]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 14:54:16]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:05:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:07:29]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:18:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:18:59]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 15:32:19]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:34:21]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 15:36:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:38:05]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:41:46]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 15:47:58]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 15:48:38]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:51:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:54:10]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 15:57:30]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 15:58:55]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:00:14]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:06:04]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:08:33]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:12:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:13:24]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:13:25]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:15:57]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:18:37]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:19:11]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:21:57]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:22:47]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:24:40]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:27:36]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:29:08]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:33:51]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:36:36]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:39:31]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:42:40]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 16:44:34]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 16:58:35]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 17:02:04]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 17:03:54]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 17:05:16]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 17:05:33]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 17:08:04]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 17:09:58]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 17:12:02]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 17:13:17]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 17:18:30]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:15:32]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:15:34]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:15:35]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:18:02]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:18:27]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:20:23]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:22:38]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:24:44]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:30:23]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:32:25]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:33:38]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:34:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:37:16]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:37:48]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:40:17]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:41:22]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:42:16]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:42:56]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:45:49]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:46:23]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:46:26]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:48:53]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:49:55]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:52:51]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:53:43]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:55:52]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:57:59]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 19:59:01]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 19:59:15]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 19:59:25]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 20:02:12]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:02:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:08:28]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:14:18]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:16:23]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:20:41]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:23:25]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:23:50]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:27:06]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:30:21]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:31:10]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 20:32:50]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:35:44]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:39:18]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:39:59]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 20:41:05]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:42:17]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:43:31]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 20:45:14]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:46:32]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:48:10]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:49:52]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:53:03]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 20:53:48]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 20:56:02]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 20:59:34]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:00:36]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:01:22]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:01:43]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:02:35]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:04:47]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:13:33]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:15:53]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:18:51]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:21:39]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:22:14]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:23:30]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:24:11]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:26:32]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:28:26]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:28:45]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:29:45]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:30:11]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:30:20]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:45:35]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:51:30]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 21:53:50]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 21:54:01]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:56:48]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 21:57:58]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 22:02:49]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:06:21]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:06:37]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 22:07:56]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:12:31]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:14:26]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:15:46]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 22:17:08]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:21:59]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 22:22:36]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:23:29]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:24:20]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:25:07]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:26:39]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:32:24]
+#28-NovaBahia_6--15-JqdytM-scheduling_15-0-07-01/10/2025_05:44:36$
+
+[2025-10-01 22:34:33]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 22:37:05]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 22:39:49]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 22:43:43]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 22:46:29]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 22:51:37]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:02:16]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:06:15]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:07:27]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:10:10]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:13:33]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:15:25]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:18:36]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:20:55]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:21:54]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:28:07]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:29:34]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:32:06]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:35:15]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:44:29]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:48:51]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:52:16]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+
+[2025-10-01 23:53:54]
+#28-PioneiraLEM_2-system_manager-24-0-brownout-0-655-30/11/1999_21:00:00$
+
+[2025-10-01 23:58:14]
+#28-Savana_16-system_manager-30-0-manual-0-182-01/10/2025_13:40:23$
+

@@ -13,12 +13,12 @@ import time        # [NOVO] para pequenas esperas/controlar timeout
 BROKER = os.environ.get("BROKER", "a19mijesri84u2-ats.iot.us-east-1.amazonaws.com")
 PORT = int(os.environ.get("PORT", 8883))
 
-TOPICS = ["cloudv2-ping", "cloud2", "cloudv2", "cloudv2-shutdown"]
+TOPICS = ["cloudv2-ping", "cloud2", "cloudv2", "cloudv2-shutdown", "hydrometer-cloudv2", "hydrometer-cloud2", "icrop-cloudv2"]
 
-FILTER_NAMES = ["PioneiraLEM_2", "NovaBahia_6", "Savana_16", "ItacirJunior_5", "soilteste_1", "FazendaUfla_1"] 
+FILTER_NAMES = ["PioneiraLEM_2", "NovaBahia_6", "Savana_16", "ItacirJunior_5", "soilteste_1", "soilteste_2", "OldFriends_12", "GrupoBB_2"] 
 
 # [NOVO] Tópicos da funcionalidade #11$
-CMD_TOPIC  = os.environ.get("CMD_TOPIC",  "soilteste_1")    # onde publicaremos "#11$"
+CMD_TOPIC  = os.environ.get("CMD_TOPIC",  "soilteste_2")    # onde publicaremos "#11$"
 INFO_TOPIC = os.environ.get("INFO_TOPIC", "cloudv2-info")   # onde ouviremos a resposta
 
 # [NOVO] Intervalo aleatório entre envios (minutos)

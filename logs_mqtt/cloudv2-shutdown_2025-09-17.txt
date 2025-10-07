@@ -1,0 +1,36 @@
+[2025-09-17 02:52:01]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-17 06:44:41]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-17 08:57:16]
+#28-MariaRita_1-nimbus_app-01-0-Irrigabras-0-65-15/09/2025_11:02:23$
+
+[2025-09-17 09:58:23]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-17 10:52:06]
+#28-PioneiraLEM_2-soil_app-01-0-lucasriffel-0-222-15/09/2025_18:57:07$
+
+[2025-09-17 10:52:41]
+#28-Savana_16-system_manager-30-0-manual-0-172-09/09/2025_17:57:44$
+
+[2025-09-17 11:05:10]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:04:28$
+
+[2025-09-17 11:13:22]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:12:40$
+
+[2025-09-17 11:17:51]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:17:10$
+
+[2025-09-17 11:27:12]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:17:10$
+
+[2025-09-17 11:27:36]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:17:10$
+
+[2025-09-17 11:36:15]
+#28-NovaBahia_6-system_manager-24-0-brownout-0-655-17/09/2025_11:17:10$
+
