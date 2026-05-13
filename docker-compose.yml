@@ -15,6 +15,7 @@ services:
       CLOUDV2_DEV_HOT_RELOAD: "0"
       REQUIRE_APPLY_TO_START: "0"
       HISTORY_MODE: "merge"
+      DB_BACKEND: "sqlite"
       SQLITE_DB_PATH: "/data/telemetry.sqlite3"
       CA_CERT_PATH: "/app/certs/amazon_ca.pem"
       CLIENT_CERT_PATH: "/app/certs/device.pem.crt"

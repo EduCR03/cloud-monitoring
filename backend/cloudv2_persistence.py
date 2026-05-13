@@ -7,6 +7,7 @@ import threading
 import time
 import uuid
 
+from backend.cloudv2_db import connect_database, resolve_database_settings
 from backend.cloudv2_paths import resolve_data_dir
 from backend.cloudv2_dashboard import slugify
 from backend.cloudv2_time import ts_to_dashboard_str
@@ -462,8 +463,25 @@ def _resolve_timeline_disconnect_threshold(summary, settings=None):
 
 
 class TelemetryPersistence:
-    def __init__(self, db_path=None, migrations_dir=None, max_events_per_pivot=5000, log=None):
-        self.db_path = str(db_path or DEFAULT_DB_PATH)
+    def __init__(
+        self,
+        db_path=None,
+        db_backend="sqlite",
+        database_url=None,
+        migrations_dir=None,
+        max_events_per_pivot=5000,
+        log=None,
+    ):
+        self.db_settings = resolve_database_settings(
+            {
+                "db_backend": db_backend,
+                "sqlite_db_path": str(db_path or DEFAULT_DB_PATH),
+                "database_url": database_url,
+            }
+        )
+        self.db_backend = self.db_settings.backend
+        self.db_path = self.db_settings.sqlite_db_path
+        self.database_url = self.db_settings.database_url
         self.migrations_dir = str(migrations_dir or DEFAULT_MIGRATIONS_DIR)
         self.max_events_per_pivot = max(100, int(max_events_per_pivot or 5000))
         self.log = log
@@ -476,17 +494,7 @@ class TelemetryPersistence:
             if self._conn is not None:
                 return
 
-            directory = os.path.dirname(self.db_path)
-            if directory:
-                os.makedirs(directory, exist_ok=True)
-
-            conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA journal_mode = WAL")
-            conn.execute("PRAGMA synchronous = NORMAL")
-            conn.execute("PRAGMA busy_timeout = 3000")
-
+            conn = connect_database(self.db_settings, auth_mode=False)
             self._conn = conn
             self._ensure_migrations_table_locked()
             self._apply_migrations_locked()

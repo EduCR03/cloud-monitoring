@@ -1,6 +1,7 @@
 ﻿import json
 import os
 
+from backend.cloudv2_db import normalize_db_backend
 from backend.cloudv2_paths import resolve_data_dir
 
 
@@ -58,7 +59,9 @@ DEFAULT_CONFIG = {
     "max_events_per_pivot_panel": 5000,
     "max_events_per_pivot_list": 5000,
     "probe_settings": {},
+    "db_backend": "sqlite",
     "sqlite_db_path": os.path.join(resolve_data_dir(), "telemetry.sqlite3"),
+    "database_url": "",
 }
 
 
@@ -227,7 +230,9 @@ def _apply_env_overrides(config):
         "MAX_EVENTS_PER_PIVOT": "max_events_per_pivot",
         "MAX_EVENTS_PER_PIVOT_PANEL": "max_events_per_pivot_panel",
         "MAX_EVENTS_PER_PIVOT_LIST": "max_events_per_pivot_list",
+        "DB_BACKEND": "db_backend",
         "SQLITE_DB_PATH": "sqlite_db_path",
+        "DATABASE_URL": "database_url",
     }
     for env_name, config_key in overrides.items():
         env_value = os.environ.get(env_name)
@@ -440,6 +445,10 @@ def normalize_config(raw_config):
         str(base.get("sqlite_db_path", DEFAULT_CONFIG["sqlite_db_path"])).strip()
         or DEFAULT_CONFIG["sqlite_db_path"]
     )
+    base["db_backend"] = normalize_db_backend(base.get("db_backend", DEFAULT_CONFIG["db_backend"]))
+    base["database_url"] = str(base.get("database_url", DEFAULT_CONFIG["database_url"])).strip()
+    if base["db_backend"] == "postgres" and not base["database_url"]:
+        raise ValueError("database_url obrigatorio quando db_backend=postgres")
 
     base["filter_names"] = _normalize_string_list(base.get("filter_names"))
     base["cmd_topics"] = _normalize_string_list(base.get("cmd_topics"))

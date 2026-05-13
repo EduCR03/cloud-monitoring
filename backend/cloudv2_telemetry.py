@@ -8,6 +8,7 @@ import threading
 import time
 import copy
 
+from backend.cloudv2_db import resolve_database_settings
 from backend.cloudv2_dashboard import DATA_DIR, ensure_dirs, slugify, write_json_atomic
 from backend.cloudv2_persistence import TelemetryPersistence
 from backend.cloudv2_security import get_db_purge_password
@@ -460,11 +461,20 @@ class TelemetryStore:
         self._active_run_id = None
         self._monitoring_mode = "idle" if self.require_apply_to_start else "live"
 
-        self.sqlite_db_path = str(config.get("sqlite_db_path", os.path.join(DATA_DIR, "telemetry.sqlite3"))).strip()
-        if not self.sqlite_db_path:
-            self.sqlite_db_path = os.path.join(DATA_DIR, "telemetry.sqlite3")
+        self.db_settings = resolve_database_settings(
+            {
+                "db_backend": config.get("db_backend", "sqlite"),
+                "sqlite_db_path": config.get("sqlite_db_path", os.path.join(DATA_DIR, "telemetry.sqlite3")),
+                "database_url": config.get("database_url", ""),
+            }
+        )
+        self.sqlite_db_path = self.db_settings.sqlite_db_path
+        self.db_backend = self.db_settings.backend
+        self.database_url = self.db_settings.database_url
         self.persistence = TelemetryPersistence(
             db_path=self.sqlite_db_path,
+            db_backend=self.db_backend,
+            database_url=self.database_url,
             max_events_per_pivot=self.max_events_per_pivot_panel,
             log=self.log,
         )
