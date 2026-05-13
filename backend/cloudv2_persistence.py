@@ -14,7 +14,8 @@ from backend.cloudv2_time import ts_to_dashboard_str
 
 
 DEFAULT_DB_PATH = os.path.join(resolve_data_dir(), "telemetry.sqlite3")
-DEFAULT_MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "migrations")
+DEFAULT_MIGRATIONS_SQLITE_DIR = os.path.join(os.path.dirname(__file__), "migrations")
+DEFAULT_MIGRATIONS_POSTGRES_DIR = os.path.join(os.path.dirname(__file__), "migrations_postgres")
 PROBE_STATS_WINDOW_SEC = 30 * 24 * 3600
 TIMELINE_MINI_BINS = 96
 TIMELINE_MINI_DEFAULT_WINDOW_SEC = 30 * 24 * 3600
@@ -482,7 +483,7 @@ class TelemetryPersistence:
         self.db_backend = self.db_settings.backend
         self.db_path = self.db_settings.sqlite_db_path
         self.database_url = self.db_settings.database_url
-        self.migrations_dir = str(migrations_dir or DEFAULT_MIGRATIONS_DIR)
+        self.migrations_dir = str(migrations_dir or self._default_migrations_dir())
         self.max_events_per_pivot = max(100, int(max_events_per_pivot or 5000))
         self.log = log
 
@@ -514,6 +515,11 @@ class TelemetryPersistence:
             raise RuntimeError("Persistence not started")
         return self._conn
 
+    def _default_migrations_dir(self):
+        if self.db_backend == "postgres":
+            return DEFAULT_MIGRATIONS_POSTGRES_DIR
+        return DEFAULT_MIGRATIONS_SQLITE_DIR
+
     def _ensure_migrations_table_locked(self):
         conn = self._require_conn_locked()
         with conn:
@@ -529,6 +535,8 @@ class TelemetryPersistence:
 
     def _iter_migration_files_locked(self):
         if not os.path.isdir(self.migrations_dir):
+            if self.db_backend == "postgres":
+                raise RuntimeError(f"Diretorio de migrations PostgreSQL ausente: {self.migrations_dir}")
             return []
 
         entries = []
@@ -561,13 +569,32 @@ class TelemetryPersistence:
             with open(path, "r", encoding="utf-8") as file:
                 script = file.read()
             with conn:
-                conn.executescript(script)
-                conn.execute(
-                    "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (?, ?, ?)",
-                    (version, name, time.time()),
-                )
+                self._run_migration_script_locked(conn, script)
+                self._insert_schema_migration_locked(conn, version, name, time.time())
             if self.log is not None:
                 self.log.info("Migration aplicada: v%s (%s)", version, name)
+
+    def _run_migration_script_locked(self, conn, script):
+        safe_script = str(script or "").strip()
+        if not safe_script:
+            return
+        if self.db_backend == "postgres":
+            with conn.cursor() as cursor:
+                cursor.execute(safe_script)
+            return
+        conn.executescript(safe_script)
+
+    def _insert_schema_migration_locked(self, conn, version, name, applied_at_ts):
+        if self.db_backend == "postgres":
+            conn.execute(
+                "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (%s, %s, %s)",
+                (int(version), str(name), float(applied_at_ts)),
+            )
+            return
+        conn.execute(
+            "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (?, ?, ?)",
+            (int(version), str(name), float(applied_at_ts)),
+        )
 
     def _upsert_pivot_locked(self, conn, pivot_id, pivot_slug, seen_ts=None):
         now_ts = time.time()
