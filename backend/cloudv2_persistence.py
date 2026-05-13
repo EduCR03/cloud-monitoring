@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import sqlite3
 import statistics
 import threading
 import time
@@ -46,6 +45,20 @@ def _safe_float(value, default=None):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _row_get(row, key, default=None):
+    if row is None:
+        return default
+    try:
+        if isinstance(row, dict):
+            return row.get(key, default)
+        return row[key]
+    except Exception:
+        try:
+            return getattr(row, key)
+        except Exception:
+            return default
 
 
 def _safe_int(value, default=None):
@@ -1494,10 +1507,7 @@ class TelemetryPersistence:
                 resolved_run = self._query_run_row_locked(conn, run_id=normalized_run_id)
             else:
                 resolved_run = self.get_or_create_active_run(now_ts=current_ts, source=source)
-            if isinstance(resolved_run, sqlite3.Row):
-                resolved_run_id = str(resolved_run["run_id"] or "")
-            else:
-                resolved_run_id = str((resolved_run or {}).get("run_id") or "")
+            resolved_run_id = str(_row_get(resolved_run, "run_id", "") or "")
             if not resolved_run_id:
                 return None
 
@@ -1605,10 +1615,7 @@ class TelemetryPersistence:
                 resolved_run = self._query_run_row_locked(conn, run_id=normalized_run_id)
             else:
                 resolved_run = self.get_or_create_active_run(now_ts=current_ts, source=source)
-            if isinstance(resolved_run, sqlite3.Row):
-                resolved_run_id = str(resolved_run["run_id"] or "")
-            else:
-                resolved_run_id = str((resolved_run or {}).get("run_id") or "")
+            resolved_run_id = str(_row_get(resolved_run, "run_id", "") or "")
             if not resolved_run_id:
                 return None
 

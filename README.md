@@ -53,6 +53,24 @@ $env:CLOUDV2_DEV_HOT_RELOAD="0"; python backend/run_monitor.py
 http://localhost:8008/login
 ```
 
+### Banco de dados
+
+Modo atual, seguro:
+
+- `DB_BACKEND=sqlite`
+- `SQLITE_DB_PATH=/data/telemetry.sqlite3`
+
+Modo PostgreSQL em migracao:
+
+- `DB_BACKEND=postgres`
+- `DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2`
+
+Rollback simples:
+
+- voltar `DB_BACKEND=sqlite`
+- manter `SQLITE_DB_PATH`
+- reiniciar backend
+
 ## Fluxo de desenvolvimento local isolado
 
 Se quiser testar mudancas grandes sem encostar no fluxo atual que esta em producao, use uma branch separada, por exemplo:

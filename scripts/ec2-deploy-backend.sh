@@ -44,6 +44,15 @@ reset_db_once_if_requested() {
     return 0
   fi
 
+  local db_backend="sqlite"
+  if [ -f .env.backend ]; then
+    db_backend="$(grep -E '^DB_BACKEND=' .env.backend | tail -n1 | cut -d '=' -f2- | tr -d '\r' || true)"
+  fi
+  if [ -n "${db_backend}" ] && [ "${db_backend}" != "sqlite" ]; then
+    echo "Reset one-shot ignorado para DB_BACKEND=${db_backend}."
+    return 0
+  fi
+
   local marker_path="/data/.cloud_monitoring_reset_20260211_done"
   echo "Verificando reset one-shot de dados (schema preservado)..."
 
