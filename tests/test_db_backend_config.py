@@ -3,8 +3,38 @@ import tempfile
 import unittest
 
 from backend.cloudv2_auth import AuthService
-from backend.cloudv2_db import connect_database, normalize_db_backend, resolve_database_settings
+from backend.cloudv2_db import (
+    PostgresCompatConnection,
+    connect_database,
+    normalize_db_backend,
+    resolve_database_settings,
+    translate_sqlite_sql_to_postgres,
+)
 from backend.cloudv2_persistence import TelemetryPersistence
+
+
+class _FakeRawConnection:
+    def __init__(self):
+        self.calls = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def execute(self, sql, params=None):
+        self.calls.append((sql, params))
+        return self
+
+    def fetchone(self):
+        return {"ok": 1}
+
+    def fetchall(self):
+        return []
+
+    def close(self):
+        return None
 
 
 class DbBackendConfigTests(unittest.TestCase):
@@ -53,3 +83,34 @@ class DbBackendConfigTests(unittest.TestCase):
             self.assertEqual(service.db_backend, "sqlite")
             self.assertEqual(service.db_path, db_path)
             self.assertEqual(service.database_url, "")
+
+    def test_translate_sqlite_sql_to_postgres_rewrites_placeholders_and_nocase(self):
+        sql = """
+        SELECT value
+        FROM pivots
+        WHERE pivot_id = ?
+        ORDER BY pivot_slug COLLATE NOCASE ASC
+        LIMIT ?
+        """
+        translated = translate_sqlite_sql_to_postgres(sql)
+        self.assertIn("pivot_id = %s", translated)
+        self.assertIn("ORDER BY LOWER(pivot_slug) ASC", translated)
+        self.assertIn("LIMIT %s", translated)
+
+    def test_translate_sqlite_sql_to_postgres_ignores_sqlite_sequence(self):
+        translated = translate_sqlite_sql_to_postgres("DELETE FROM sqlite_sequence WHERE name = 'events'")
+        self.assertIsNone(translated)
+
+    def test_postgres_compat_connection_rewrites_sql_before_execute(self):
+        fake = _FakeRawConnection()
+        conn = PostgresCompatConnection(fake)
+        row = conn.execute(
+            "SELECT value FROM pivots WHERE pivot_id = ? ORDER BY pivot_slug COLLATE NOCASE ASC LIMIT ?",
+            ("Pivot_1", 5),
+        ).fetchone()
+        self.assertEqual(row["ok"], 1)
+        self.assertEqual(len(fake.calls), 1)
+        sql, params = fake.calls[0]
+        self.assertIn("pivot_id = %s", sql)
+        self.assertIn("ORDER BY LOWER(pivot_slug) ASC", sql)
+        self.assertEqual(params, ("Pivot_1", 5))
