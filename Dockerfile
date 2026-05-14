@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app/backend
 COPY frontend /app/frontend
+COPY scripts /app/scripts
 COPY cloudv2-config.json /app/cloudv2-config.json
 
 RUN useradd --create-home --shell /usr/sbin/nologin appuser \

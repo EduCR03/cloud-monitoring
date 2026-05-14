@@ -3,6 +3,7 @@ from pathlib import Path
 
 SCRIPT = Path("scripts/ec2-postgres-cutover.sh")
 RUNBOOK = Path("POSTGRES_MIGRATION_RUNBOOK.md")
+DOCKERFILE = Path("Dockerfile")
 
 
 def test_ec2_cutover_script_has_safe_guards():
@@ -35,3 +36,9 @@ def test_runbook_documents_ec2_cutover_and_rollback():
     assert "/api/health" in content
     assert "reinicia em SQLite" in content
     assert "scripts/ec2-postgres-cutover.sh" in content
+
+
+def test_backend_image_contains_cutover_support_scripts():
+    content = DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "COPY scripts /app/scripts" in content
