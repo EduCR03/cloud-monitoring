@@ -27,6 +27,12 @@ def test_ec2_cutover_script_has_safe_guards():
     assert "run_http_smoke" in content
     assert "http_smoke_check.py" in content
     assert "RUN_HTTP_SMOKE" in content
+    assert "write_cutover_manifest" in content
+    assert "write_cutover_manifest.py" in content
+    assert "MANIFEST_PATH" in content
+    assert "validated_without_cutover" in content
+    assert "cutover_applied" in content
+    assert "failed_restored" in content
     assert "DB_BACKEND=sqlite" in content
     assert 'set_env_value "DB_BACKEND" "postgres"' in content
 
@@ -45,6 +51,8 @@ def test_runbook_documents_ec2_cutover_and_rollback():
     assert "postgres_preflight.py" in content
     assert "Smoke HTTP" in content
     assert "http_smoke_check.py" in content
+    assert "manifesto auditavel" in content
+    assert "URL PostgreSQL mascarada" in content
     assert "scripts/ec2-postgres-cutover.sh" in content
 
 

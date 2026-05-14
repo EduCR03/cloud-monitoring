@@ -18,9 +18,11 @@ REQUIRE_EMPTY_POSTGRES="${REQUIRE_EMPTY_POSTGRES:-0}"
 RUN_HTTP_SMOKE="${RUN_HTTP_SMOKE:-1}"
 SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:8008}"
 SMOKE_REPORT_JSON="${SMOKE_REPORT_JSON:-/data/postgres-http-smoke-report.json}"
+MANIFEST_PATH="${MANIFEST_PATH:-/data/postgres-cutover-${CUTOVER_ID}.manifest.json}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
+CURRENT_COMMIT=""
 
 if [ ! -d "${APP_DIR}/.git" ]; then
   echo "Repositorio ausente em ${APP_DIR}." >&2
@@ -75,6 +77,7 @@ restore_on_error() {
     docker compose up -d backend || true
     echo "Backend reiniciado com configuracao anterior."
   fi
+  write_cutover_manifest "failed_restored" "Falha durante cutover; configuracao anterior restaurada." || true
 }
 
 trap 'restore_on_error' ERR
@@ -156,6 +159,38 @@ run_http_smoke() {
     python scripts/http_smoke_check.py
 }
 
+write_cutover_manifest() {
+  local status="$1"
+  local note="${2:-}"
+  local apply_flag=()
+  local smoke_flag=()
+  if [ "${APPLY_CUTOVER}" = "1" ]; then
+    apply_flag+=(--apply-cutover)
+  fi
+  if [ "${RUN_HTTP_SMOKE}" = "1" ]; then
+    smoke_flag+=(--run-http-smoke)
+  fi
+  docker compose run --rm --no-deps \
+    -e DATABASE_URL="${DATABASE_URL:-}" \
+    backend \
+    python scripts/write_cutover_manifest.py \
+      --path "${MANIFEST_PATH}" \
+      --cutover-id "${CUTOVER_ID}" \
+      --status "${status}" \
+      --branch "${BRANCH}" \
+      --commit "${CURRENT_COMMIT}" \
+      --database-url "${DATABASE_URL:-}" \
+      --sqlite-path "${SQLITE_PATH}" \
+      --sqlite-backup-path "${SQLITE_BACKUP_PATH}" \
+      --sqlite-backup-sha256-path "${SQLITE_BACKUP_SHA256_PATH}" \
+      --env-backup-path "${ENV_BACKUP}" \
+      --compare-report-path "${REPORT_PATH}" \
+      --smoke-report-path "${SMOKE_REPORT_JSON}" \
+      --note "${note}" \
+      "${apply_flag[@]}" \
+      "${smoke_flag[@]}"
+}
+
 if [ "${ROLLBACK_ONLY}" = "1" ]; then
   rollback_to_sqlite
   exit 0
@@ -171,6 +206,7 @@ echo "Atualizando branch ${BRANCH}..."
 git fetch origin
 git checkout "${BRANCH}"
 git pull --ff-only origin "${BRANCH}"
+CURRENT_COMMIT="$(git rev-parse --short HEAD)"
 
 echo "Construindo imagem backend..."
 docker compose build backend
@@ -205,6 +241,7 @@ if [ "${APPLY_CUTOVER}" != "1" ]; then
   docker compose up -d backend
   wait_for_backend_health
   run_http_smoke
+  write_cutover_manifest "validated_without_cutover" "Validacao executada sem alterar DB_BACKEND."
   BACKEND_STOPPED=0
   docker compose ps backend
   exit 0
@@ -218,10 +255,12 @@ set_env_value "SQLITE_DB_PATH" "${SQLITE_PATH}"
 docker compose up -d backend
 wait_for_backend_health
 run_http_smoke
+write_cutover_manifest "cutover_applied" "Backend iniciado com DB_BACKEND=postgres."
 BACKEND_STOPPED=0
 CUTOVER_DONE=1
 docker compose ps backend
 
 echo "Cutover PostgreSQL aplicado."
 echo "Backup SQLite: ${SQLITE_BACKUP_PATH}"
+echo "Manifesto: ${MANIFEST_PATH}"
 echo "Rollback: ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh"

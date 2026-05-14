@@ -187,6 +187,8 @@ Antes de migrar, ele cria backup em `/data/backups/telemetry.<timestamp>.sqlite3
 e registra o SHA256 ao lado do arquivo.
 Depois de subir o backend, ele chama `/api/health`.
 Se o healthcheck falhar, restaura `.env.backend` anterior e reinicia em SQLite.
+Cada execucao grava manifesto auditavel em `/data/postgres-cutover-<timestamp>.manifest.json`.
+Esse arquivo registra commit, branch, backup, relatorios e URL PostgreSQL mascarada.
 
 Restaurar backup SQLite manualmente:
 
