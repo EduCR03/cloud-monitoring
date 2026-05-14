@@ -44,6 +44,22 @@ python scripts/migrate_sqlite_to_postgres.py \
 
 ## Validacao comparativa
 
+### Preflight RDS
+
+Validar acesso ao PostgreSQL sem migrar dados:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+python scripts/postgres_preflight.py
+```
+
+Falhar se o schema `public` ja tiver tabelas:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+python scripts/postgres_preflight.py --require-empty
+```
+
 ### Local com Docker
 
 No Windows:
@@ -144,6 +160,7 @@ ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh
 
 O script para o backend antes da migracao para congelar o SQLite.
 Se `APPLY_CUTOVER` nao estiver ativo, o backend volta em SQLite depois da validacao.
+Antes de parar o backend, ele valida conexao/permissoes do PostgreSQL/RDS.
 Antes de migrar, ele cria backup em `/data/backups/telemetry.<timestamp>.sqlite3`
 e registra o SHA256 ao lado do arquivo.
 Depois de subir o backend, ele chama `/api/health`.

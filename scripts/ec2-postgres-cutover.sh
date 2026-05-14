@@ -14,6 +14,7 @@ SQLITE_BACKUP_PATH="${SQLITE_BACKUP_PATH:-${BACKUP_DIR}/telemetry.${CUTOVER_ID}.
 SQLITE_BACKUP_SHA256_PATH="${SQLITE_BACKUP_SHA256_PATH:-${SQLITE_BACKUP_PATH}.sha256}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_SLEEP_SEC="${HEALTHCHECK_SLEEP_SEC:-2}"
+REQUIRE_EMPTY_POSTGRES="${REQUIRE_EMPTY_POSTGRES:-0}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
@@ -124,6 +125,20 @@ create_sqlite_backup() {
     '
 }
 
+run_postgres_preflight() {
+  echo "Validando acesso PostgreSQL/RDS..."
+  local extra_args=()
+  if [ "${REQUIRE_EMPTY_POSTGRES}" = "1" ]; then
+    extra_args+=(--require-empty)
+  fi
+  docker compose run --rm --no-deps \
+    -e DATABASE_URL="${DATABASE_URL}" \
+    backend \
+    python scripts/postgres_preflight.py \
+      --database-url "${DATABASE_URL}" \
+      "${extra_args[@]}"
+}
+
 if [ "${ROLLBACK_ONLY}" = "1" ]; then
   rollback_to_sqlite
   exit 0
@@ -142,6 +157,8 @@ git pull --ff-only origin "${BRANCH}"
 
 echo "Construindo imagem backend..."
 docker compose build backend
+
+run_postgres_preflight
 
 ENV_BACKUP=".env.backend.postgres-cutover.$(date +%Y%m%d%H%M%S).bak"
 cp .env.backend "${ENV_BACKUP}"
