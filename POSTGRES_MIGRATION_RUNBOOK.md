@@ -119,6 +119,32 @@ SQLITE_DB_PATH=/data/telemetry.sqlite3
 Rollback operacional nao depende de migrar dados de volta.
 Origem SQLite continua preservada.
 
+## Cutover EC2/RDS
+
+Validar migracao sem trocar producao:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+bash scripts/ec2-postgres-cutover.sh
+```
+
+Validar e trocar backend para PostgreSQL:
+
+```bash
+APPLY_CUTOVER=1 \
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+bash scripts/ec2-postgres-cutover.sh
+```
+
+Voltar para SQLite:
+
+```bash
+ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh
+```
+
+O script para o backend antes da migracao para congelar o SQLite.
+Se `APPLY_CUTOVER` nao estiver ativo, o backend volta em SQLite depois da validacao.
+
 ## Riscos remanescentes
 
 - smoke real PostgreSQL ainda depende ambiente com servidor ativo
