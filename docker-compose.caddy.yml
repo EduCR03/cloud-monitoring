@@ -1,0 +1,10 @@
+services:
+  backend:
+    networks:
+      - default
+      - caddy_proxy
+
+networks:
+  caddy_proxy:
+    external: true
+    name: "${CADDY_DOCKER_NETWORK:-proxy_default}"

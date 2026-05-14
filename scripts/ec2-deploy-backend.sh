@@ -34,6 +34,21 @@ fi
 
 mkdir -p certs logs_mqtt
 
+read_env_value() {
+  local key="$1"
+  if [ ! -f .env.backend ]; then
+    return 0
+  fi
+  grep -E "^${key}=" .env.backend | tail -n1 | cut -d '=' -f2- | tr -d '\r' || true
+}
+
+BACKEND_PUBLIC_PORT="${BACKEND_PUBLIC_PORT:-$(read_env_value BACKEND_PUBLIC_PORT)}"
+BACKEND_PUBLIC_PORT="${BACKEND_PUBLIC_PORT:-8008}"
+BACKEND_BIND_ADDRESS="${BACKEND_BIND_ADDRESS:-$(read_env_value BACKEND_BIND_ADDRESS)}"
+BACKEND_BIND_ADDRESS="${BACKEND_BIND_ADDRESS:-0.0.0.0}"
+export BACKEND_PUBLIC_PORT
+export BACKEND_BIND_ADDRESS
+
 docker compose build backend
 docker compose up -d backend
 docker compose ps backend

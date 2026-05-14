@@ -6,6 +6,7 @@ BRANCH="${BRANCH:-feat/aws-server}"
 REPO_URL="${REPO_URL:-https://github.com/Monitoramento-de-Conectividade/cloud-monitoring.git}"
 
 BACKEND_PUBLIC_PORT="${BACKEND_PUBLIC_PORT:-8008}"
+BACKEND_BIND_ADDRESS="${BACKEND_BIND_ADDRESS:-0.0.0.0}"
 BROKER="${BROKER:-a19mijesri84u2-ats.iot.us-east-1.amazonaws.com}"
 MQTT_PORT="${MQTT_PORT:-8883}"
 
@@ -63,6 +64,7 @@ mkdir -p certs logs_mqtt
 
 cat > .env.backend <<EOF
 BACKEND_PUBLIC_PORT=${BACKEND_PUBLIC_PORT}
+BACKEND_BIND_ADDRESS=${BACKEND_BIND_ADDRESS}
 BROKER=${BROKER}
 MQTT_PORT=${MQTT_PORT}
 CORS_ALLOWED_ORIGINS=${FRONTEND_URL}
@@ -95,6 +97,9 @@ if [ ! -f certs/amazon_ca.pem ] || [ ! -f certs/device.pem.crt ] || [ ! -f certs
   echo "  certs/private.pem.key" >&2
   exit 1
 fi
+
+export BACKEND_PUBLIC_PORT
+export BACKEND_BIND_ADDRESS
 
 docker compose up -d --build backend
 docker compose ps backend

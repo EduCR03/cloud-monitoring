@@ -307,7 +307,7 @@ Sim, a estrutura atual permite separar:
 ### 1) Backend na AWS (VM)
 
 - Rode o monitor como servico (ex.: systemd) com `python backend/run_monitor.py`.
-- Publique o HTTP com HTTPS (Nginx/Caddy + dominio), por exemplo `https://api.seudominio.com`.
+- Publique o HTTP com HTTPS usando Caddy, por exemplo `https://api.seudominio.com`.
 - Configure variaveis importantes:
   - `CORS_ALLOWED_ORIGINS=https://seu-frontend.vercel.app`
   - `AUTH_COOKIE_SAMESITE=None`
@@ -333,6 +333,55 @@ window.CLOUDV2_API_BASE_URL = "https://api.seudominio.com";
 - Se quiser manter tudo em mesma origem (sem CORS/cookie cross-site), use proxy reverso para servir frontend e API no mesmo dominio.
 
 ## Deploy mais simples na AWS com Docker (recomendado)
+
+### Proxy oficial: Caddy
+
+Este projeto assume Caddy como proxy HTTPS da EC2.
+
+- O backend continua ouvindo HTTP interno na porta `8008`.
+- O Caddy faz TLS e encaminha para o backend.
+- O script antigo de HTTPS agora gera e valida bloco Caddyfile.
+- Nenhum script deste repo deve sobrescrever o Caddy compartilhado do Fleet.
+
+Bloco Caddyfile minimo:
+
+```caddyfile
+api.seudominio.com {
+    encode zstd gzip
+
+    reverse_proxy 127.0.0.1:8008 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}
+```
+
+Se o Caddy roda em outro Docker stack, mantenha `BACKEND_BIND_ADDRESS=0.0.0.0` e use no Caddy o upstream que o container Caddy consegue alcançar.
+
+Se quiser conectar o backend direto na rede Docker do Caddy:
+
+```bash
+CADDY_DOCKER_NETWORK=proxy_default \
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build backend
+```
+
+Neste modo, o upstream no Caddy pode ser:
+
+```caddyfile
+reverse_proxy cloud-monitoring-backend:8008
+```
+
+Para gerar e validar o bloco:
+
+```bash
+DOMAIN=api.seudominio.com \
+FRONTEND_URL=https://SEU_FRONTEND.vercel.app \
+BACKEND_UPSTREAM=http://127.0.0.1:8008 \
+bash scripts/ec2-setup-https.sh
+```
 
 ### 1) Setup inicial na EC2 (uma vez)
 
@@ -400,6 +449,13 @@ window.CLOUDV2_API_BASE_URL = "https://SEU_BACKEND_API";
 ```
 
 Importante: para cookie cross-site funcionar no login, a API da AWS deve estar em HTTPS.
+
+Importante para Caddy:
+
+- mantenha `AUTH_BASE_URL` com a URL HTTPS publica do Caddy;
+- mantenha `AUTH_COOKIE_SECURE=1`;
+- mantenha `AUTH_COOKIE_SAMESITE=None` quando frontend e API estao em dominios diferentes;
+- garanta que o Caddy envie `X-Forwarded-Proto` e `X-Forwarded-Host`.
 
 ## Deploy automático por commit (opcional)
 

@@ -217,6 +217,7 @@ dashboards/
 frontend/data/*
 !frontend/data/.gitkeep
 frontend/pivot_*.html
+Caddyfile.cloud-monitoring.generated
 .local-dev/
 
 # Local-only security secrets (never commit)

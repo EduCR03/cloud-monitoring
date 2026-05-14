@@ -27,7 +27,7 @@ services:
     container_name: cloud-monitoring-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PUBLIC_PORT:-8008}:8008"
+      - "${BACKEND_BIND_ADDRESS:-0.0.0.0}:${BACKEND_PUBLIC_PORT:-8008}:8008"
     env_file:
       - .env.backend
     environment:
