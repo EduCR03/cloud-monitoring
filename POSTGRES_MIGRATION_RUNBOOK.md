@@ -4,6 +4,8 @@
 
 Trocar SQLite por PostgreSQL sem regressao funcional.
 
+Passo a passo operacional: `POSTGRES_PRODUCTION_STEPS.md`.
+
 ## Estrategia
 
 - manter `DB_BACKEND=sqlite` como fallback
