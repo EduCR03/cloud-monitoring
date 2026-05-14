@@ -100,6 +100,19 @@ Esse wrapper para o backend apenas em `migrate-and-compare`,
 para congelar o SQLite durante a copia comparativa.
 Ele nao altera `DB_BACKEND` e nao aplica cutover.
 
+Pelo GitHub Actions, rode `PostgreSQL Real Validation`.
+Secrets necessarios:
+
+- `EC2_HOST`
+- `EC2_USER`
+- `EC2_SSH_KEY`
+- `POSTGRES_DATABASE_URL`
+- `SMOKE_EMAIL` opcional
+- `SMOKE_PASSWORD` opcional
+
+Use `validation_mode=preflight` primeiro.
+Depois `validation_mode=migrate-and-compare` com `confirm_target_truncate=true`.
+
 ### Local com Docker
 
 No Windows:

@@ -1,0 +1,109 @@
+name: PostgreSQL Real Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch para validar no EC2"
+        required: true
+        default: "dev"
+      app_dir:
+        description: "Diretorio do projeto no EC2"
+        required: true
+        default: "$HOME/cloud-monitoring"
+      validation_mode:
+        description: "Tipo de validacao"
+        required: true
+        type: choice
+        default: "preflight"
+        options:
+          - preflight
+          - compare-existing
+          - migrate-and-compare
+      confirm_target_truncate:
+        description: "Obrigatorio para migrate-and-compare"
+        required: true
+        type: boolean
+        default: false
+      sample_limit:
+        description: "Quantidade de paineis para comparar"
+        required: true
+        default: "8"
+      run_smoke_after:
+        description: "Rodar smoke HTTP apos validacao"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  ec2-real-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SSH_HOST: ${{ secrets.EC2_HOST }}
+      SSH_USER: ${{ secrets.EC2_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      POSTGRES_DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
+      SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+      SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+      BRANCH: ${{ inputs.branch }}
+      APP_DIR: ${{ inputs.app_dir }}
+      VALIDATION_MODE: ${{ inputs.validation_mode }}
+      CONFIRM_TARGET_TRUNCATE: ${{ inputs.confirm_target_truncate && '1' || '0' }}
+      SAMPLE_LIMIT: ${{ inputs.sample_limit }}
+      RUN_SMOKE_AFTER: ${{ inputs.run_smoke_after && '1' || '0' }}
+
+    steps:
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          test -n "${SSH_HOST}" || { echo "EC2_HOST ausente"; exit 1; }
+          test -n "${SSH_USER}" || { echo "EC2_USER ausente"; exit 1; }
+          test -n "${SSH_PRIVATE_KEY}" || { echo "EC2_SSH_KEY ausente"; exit 1; }
+          test -n "${POSTGRES_DATABASE_URL}" || { echo "POSTGRES_DATABASE_URL ausente"; exit 1; }
+          if [ "${VALIDATION_MODE}" = "migrate-and-compare" ] && [ "${CONFIRM_TARGET_TRUNCATE}" != "1" ]; then
+            echo "migrate-and-compare exige confirm_target_truncate=true"
+            exit 2
+          fi
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/cloud-monitoring-ec2
+          chmod 600 ~/.ssh/cloud-monitoring-ec2
+          ssh-keyscan -H "${SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Run EC2 PostgreSQL validation
+        run: |
+          set -euo pipefail
+
+          shell_quote() {
+            printf '%q' "$1"
+          }
+
+          REMOTE_APP_DIR="$(shell_quote "${APP_DIR}")"
+          REMOTE_BRANCH="$(shell_quote "${BRANCH}")"
+          REMOTE_DATABASE_URL="$(shell_quote "${POSTGRES_DATABASE_URL}")"
+          REMOTE_VALIDATION_MODE="$(shell_quote "${VALIDATION_MODE}")"
+          REMOTE_CONFIRM_TARGET_TRUNCATE="$(shell_quote "${CONFIRM_TARGET_TRUNCATE}")"
+          REMOTE_SAMPLE_LIMIT="$(shell_quote "${SAMPLE_LIMIT}")"
+          REMOTE_RUN_SMOKE_AFTER="$(shell_quote "${RUN_SMOKE_AFTER}")"
+          REMOTE_SMOKE_EMAIL="$(shell_quote "${SMOKE_EMAIL}")"
+          REMOTE_SMOKE_PASSWORD="$(shell_quote "${SMOKE_PASSWORD}")"
+
+          ssh -i ~/.ssh/cloud-monitoring-ec2 "${SSH_USER}@${SSH_HOST}" "bash -lc '
+            set -euo pipefail
+            cd ${REMOTE_APP_DIR}
+            git fetch origin
+            git checkout ${REMOTE_BRANCH}
+            git pull --ff-only origin ${REMOTE_BRANCH}
+            DATABASE_URL=${REMOTE_DATABASE_URL} \
+            VALIDATION_MODE=${REMOTE_VALIDATION_MODE} \
+            CONFIRM_TARGET_TRUNCATE=${REMOTE_CONFIRM_TARGET_TRUNCATE} \
+            SAMPLE_LIMIT=${REMOTE_SAMPLE_LIMIT} \
+            RUN_SMOKE_AFTER=${REMOTE_RUN_SMOKE_AFTER} \
+            SMOKE_EMAIL=${REMOTE_SMOKE_EMAIL} \
+            SMOKE_PASSWORD=${REMOTE_SMOKE_PASSWORD} \
+            bash scripts/ec2-postgres-real-validate.sh
+          '"
