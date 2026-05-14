@@ -17,6 +17,9 @@ def test_ec2_cutover_script_has_safe_guards():
     assert "create_sqlite_backup" in content
     assert "sha256sum" in content
     assert "SQLITE_BACKUP_PATH" in content
+    assert "wait_for_backend_health" in content
+    assert "/api/health" in content
+    assert "docker compose logs --tail 80 backend" in content
     assert "DB_BACKEND=sqlite" in content
     assert 'set_env_value "DB_BACKEND" "postgres"' in content
 
@@ -29,4 +32,6 @@ def test_runbook_documents_ec2_cutover_and_rollback():
     assert "ROLLBACK_ONLY=1" in content
     assert "/data/backups/telemetry.<timestamp>.sqlite3" in content
     assert "Restaurar backup SQLite manualmente" in content
+    assert "/api/health" in content
+    assert "reinicia em SQLite" in content
     assert "scripts/ec2-postgres-cutover.sh" in content

@@ -12,6 +12,8 @@ CUTOVER_ID="${CUTOVER_ID:-$(date -u +%Y%m%d%H%M%S)}"
 BACKUP_DIR="${BACKUP_DIR:-/data/backups}"
 SQLITE_BACKUP_PATH="${SQLITE_BACKUP_PATH:-${BACKUP_DIR}/telemetry.${CUTOVER_ID}.sqlite3}"
 SQLITE_BACKUP_SHA256_PATH="${SQLITE_BACKUP_SHA256_PATH:-${SQLITE_BACKUP_PATH}.sha256}"
+HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
+HEALTHCHECK_SLEEP_SEC="${HEALTHCHECK_SLEEP_SEC:-2}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
@@ -73,10 +75,29 @@ restore_on_error() {
 
 trap 'restore_on_error' ERR
 
+wait_for_backend_health() {
+  local attempt
+  attempt=1
+  echo "Aguardando backend saudavel..."
+  while [ "${attempt}" -le "${HEALTHCHECK_RETRIES}" ]; do
+    if docker compose exec -T backend curl -fsS http://127.0.0.1:8008/api/health >/dev/null 2>&1; then
+      echo "Backend saudavel."
+      return 0
+    fi
+    sleep "${HEALTHCHECK_SLEEP_SEC}"
+    attempt=$((attempt + 1))
+  done
+
+  echo "Backend nao respondeu healthcheck." >&2
+  docker compose logs --tail 80 backend >&2 || true
+  return 1
+}
+
 rollback_to_sqlite() {
   set_env_value "DB_BACKEND" "sqlite"
   set_env_value "SQLITE_DB_PATH" "${SQLITE_PATH}"
   docker compose up -d backend
+  wait_for_backend_health
   docker compose ps backend
   echo "Rollback aplicado para SQLite."
 }
@@ -148,6 +169,7 @@ if [ "${APPLY_CUTOVER}" != "1" ]; then
   echo "Validacao concluida. Cutover nao aplicado."
   echo "Para aplicar: APPLY_CUTOVER=1 DATABASE_URL=... bash scripts/ec2-postgres-cutover.sh"
   docker compose up -d backend
+  wait_for_backend_health
   BACKEND_STOPPED=0
   docker compose ps backend
   exit 0
@@ -159,6 +181,7 @@ set_env_value "DATABASE_URL" "${DATABASE_URL}"
 set_env_value "SQLITE_DB_PATH" "${SQLITE_PATH}"
 
 docker compose up -d backend
+wait_for_backend_health
 BACKEND_STOPPED=0
 CUTOVER_DONE=1
 docker compose ps backend

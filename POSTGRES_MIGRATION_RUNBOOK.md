@@ -146,6 +146,8 @@ O script para o backend antes da migracao para congelar o SQLite.
 Se `APPLY_CUTOVER` nao estiver ativo, o backend volta em SQLite depois da validacao.
 Antes de migrar, ele cria backup em `/data/backups/telemetry.<timestamp>.sqlite3`
 e registra o SHA256 ao lado do arquivo.
+Depois de subir o backend, ele chama `/api/health`.
+Se o healthcheck falhar, restaura `.env.backend` anterior e reinicia em SQLite.
 
 Restaurar backup SQLite manualmente:
 
