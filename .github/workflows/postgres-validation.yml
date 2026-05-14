@@ -1,0 +1,75 @@
+name: PostgreSQL Validation
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "backend/**"
+      - "scripts/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/postgres-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  postgres-validation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cloudv2_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cloudv2_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_POSTGRES_URL: postgresql://postgres:postgres@127.0.0.1:5432/cloudv2_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: python -m pip install -r requirements.txt
+
+      - name: Wait for PostgreSQL
+        run: |
+          python - <<'PY'
+          import time
+          import psycopg
+
+          dsn = "postgresql://postgres:postgres@127.0.0.1:5432/cloudv2_test"
+          deadline = time.time() + 60
+          while True:
+              try:
+                  with psycopg.connect(dsn, autocommit=True) as conn:
+                      with conn.cursor() as cursor:
+                          cursor.execute("SELECT 1")
+                  break
+              except Exception:
+                  if time.time() >= deadline:
+                      raise
+                  time.sleep(2)
+          PY
+
+      - name: Run PostgreSQL validation tests
+        run: |
+          python -m pytest -q \
+            tests/test_postgres_smoke_integration.py \
+            tests/test_postgres_compare_integration.py \
+            tests/test_postgres_migration_inventory.py \
+            tests/test_sqlite_to_postgres_migration_script.py \
+            tests/test_validate_postgres_migration_script.py \
+            tests/test_db_backend_config.py

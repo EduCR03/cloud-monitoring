@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS summary_cards_hourly (
     quality_calculating_count INTEGER NOT NULL,
     quality_yellow_count INTEGER NOT NULL,
     quality_critical_count INTEGER NOT NULL,
-    created_at_ts REAL NOT NULL,
-    updated_at_ts REAL NOT NULL
+    created_at_ts DOUBLE PRECISION NOT NULL,
+    updated_at_ts DOUBLE PRECISION NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_summary_cards_hourly_bucket_desc

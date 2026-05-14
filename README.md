@@ -53,6 +53,86 @@ $env:CLOUDV2_DEV_HOT_RELOAD="0"; python backend/run_monitor.py
 http://localhost:8008/login
 ```
 
+### Banco de dados
+
+Modo atual, seguro:
+
+- `DB_BACKEND=sqlite`
+- `SQLITE_DB_PATH=/data/telemetry.sqlite3`
+
+Modo PostgreSQL em migracao:
+
+- `DB_BACKEND=postgres`
+- `DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2`
+
+Rollback simples:
+
+- voltar `DB_BACKEND=sqlite`
+- manter `SQLITE_DB_PATH`
+- reiniciar backend
+
+## Fluxo de desenvolvimento local isolado
+
+Se quiser testar mudancas grandes sem encostar no fluxo atual que esta em producao, use uma branch separada, por exemplo:
+
+```bash
+git checkout -b dev
+```
+
+O projeto agora aceita um backend local com banco/dados isolados e um frontend local separado:
+
+1. Suba o backend local com banco proprio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-backend.ps1
+```
+
+Isso usa:
+- `CLOUDV2_DATA_DIR=.local-dev/data`
+- `SQLITE_DB_PATH=.local-dev/data/telemetry.sqlite3`
+- cookies/CORS proprios para frontend local
+- `AUTH_DISABLE_RATE_LIMIT=1` no ambiente local
+- conta admin local da `dev`: `admin-dev@local.test` / `31380626ESP32`
+
+2. Em outro terminal, suba o frontend local:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-frontend.ps1
+```
+
+3. Abra:
+
+```text
+http://127.0.0.1:4173/index.html
+```
+
+Quando o frontend roda em `localhost`/`127.0.0.1`, `frontend/runtime-config.js` passa a apontar automaticamente para `http://127.0.0.1:8008`.
+
+Se quiser que o frontend local bata em outro backend sem editar arquivo versionado:
+
+```javascript
+localStorage.setItem("cloudv2.apiBaseUrl", "https://SEU_BACKEND");
+location.reload();
+```
+
+Para voltar ao backend local:
+
+```javascript
+localStorage.removeItem("cloudv2.apiBaseUrl");
+location.reload();
+```
+
+Esse fluxo deixa o codigo atual intacto e isola os testes locais em `.local-dev/`, sem misturar com a versao que voce mantem em producao.
+
+Documentacao operacional completa da branch `dev`:
+
+- `DEV_BRANCH_WORKFLOW.md`
+
+Protecao adicional:
+
+- mock/dados locais devem ficar fora do Git
+- o repositorio possui uma checagem automatica que falha se arquivos de `.local-dev/` ou `frontend/data/` (exceto `.gitkeep`) forem versionados
+
 ## Autenticacao e LGPD
 
 - Todas as rotas e APIs do dashboard exigem autenticacao.
@@ -78,9 +158,10 @@ http://localhost:8008/login
 ### Conta admin fixa (seed automatico)
 
 - Ao iniciar o servidor, uma conta admin global e criada/atualizada automaticamente com e-mail ja verificado.
-- Valores atuais:
-  - `eduardocostar03@gmail.com`
+- No fluxo local da branch `dev`, `scripts/dev-backend.ps1` sobe esta credencial:
+  - `admin-dev@local.test`
   - senha: `31380626ESP32`
+- Fora do fluxo local, prefira definir explicitamente as variaveis de ambiente do admin fixo em vez de depender de valores padrao.
 - Pode customizar por variaveis:
   - `AUTH_FIXED_ADMIN_ENABLED` (default `1`)
   - `AUTH_FIXED_ADMIN_EMAIL`
@@ -226,7 +307,7 @@ Sim, a estrutura atual permite separar:
 ### 1) Backend na AWS (VM)
 
 - Rode o monitor como servico (ex.: systemd) com `python backend/run_monitor.py`.
-- Publique o HTTP com HTTPS (Nginx/Caddy + dominio), por exemplo `https://api.seudominio.com`.
+- Publique o HTTP com HTTPS usando Caddy, por exemplo `https://api.seudominio.com`.
 - Configure variaveis importantes:
   - `CORS_ALLOWED_ORIGINS=https://seu-frontend.vercel.app`
   - `AUTH_COOKIE_SAMESITE=None`
@@ -252,6 +333,55 @@ window.CLOUDV2_API_BASE_URL = "https://api.seudominio.com";
 - Se quiser manter tudo em mesma origem (sem CORS/cookie cross-site), use proxy reverso para servir frontend e API no mesmo dominio.
 
 ## Deploy mais simples na AWS com Docker (recomendado)
+
+### Proxy oficial: Caddy
+
+Este projeto assume Caddy como proxy HTTPS da EC2.
+
+- O backend continua ouvindo HTTP interno na porta `8008`.
+- O Caddy faz TLS e encaminha para o backend.
+- O script antigo de HTTPS agora gera e valida bloco Caddyfile.
+- Nenhum script deste repo deve sobrescrever o Caddy compartilhado do Fleet.
+
+Bloco Caddyfile minimo:
+
+```caddyfile
+api.seudominio.com {
+    encode zstd gzip
+
+    reverse_proxy 127.0.0.1:8008 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}
+```
+
+Se o Caddy roda em outro Docker stack, mantenha `BACKEND_BIND_ADDRESS=0.0.0.0` e use no Caddy o upstream que o container Caddy consegue alcançar.
+
+Se quiser conectar o backend direto na rede Docker do Caddy:
+
+```bash
+CADDY_DOCKER_NETWORK=proxy_default \
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build backend
+```
+
+Neste modo, o upstream no Caddy pode ser:
+
+```caddyfile
+reverse_proxy cloud-monitoring-backend:8008
+```
+
+Para gerar e validar o bloco:
+
+```bash
+DOMAIN=api.seudominio.com \
+FRONTEND_URL=https://SEU_FRONTEND.vercel.app \
+BACKEND_UPSTREAM=http://127.0.0.1:8008 \
+bash scripts/ec2-setup-https.sh
+```
 
 ### 1) Setup inicial na EC2 (uma vez)
 
@@ -319,6 +449,13 @@ window.CLOUDV2_API_BASE_URL = "https://SEU_BACKEND_API";
 ```
 
 Importante: para cookie cross-site funcionar no login, a API da AWS deve estar em HTTPS.
+
+Importante para Caddy:
+
+- mantenha `AUTH_BASE_URL` com a URL HTTPS publica do Caddy;
+- mantenha `AUTH_COOKIE_SECURE=1`;
+- mantenha `AUTH_COOKIE_SAMESITE=None` quando frontend e API estao em dominios diferentes;
+- garanta que o Caddy envie `X-Forwarded-Proto` e `X-Forwarded-Host`.
 
 ## Deploy automático por commit (opcional)
 

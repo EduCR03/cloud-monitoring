@@ -1,33 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Configura HTTPS (Nginx + Certbot) para o backend e executa verificacoes basicas.
+# Prepara e valida HTTPS via Caddy para o backend cloud-monitoring.
+#
+# Este script NAO instala outro proxy e NAO sobrescreve o Caddy compartilhado.
+# Ele gera o bloco Caddyfile correto e valida backend, HTTPS e CORS.
 #
 # Uso:
-#   DOMAIN=back-cloud-monitor.duckdns.org EMAIL=voce@dominio.com bash scripts/ec2-setup-https.sh
+#   DOMAIN=back-cloud-monitor.duckdns.org bash scripts/ec2-setup-https.sh
 # Ou:
-#   bash scripts/ec2-setup-https.sh back-cloud-monitor.duckdns.org voce@dominio.com
+#   bash scripts/ec2-setup-https.sh back-cloud-monitor.duckdns.org
 #
 # Variaveis opcionais:
 #   BACKEND_UPSTREAM=http://127.0.0.1:8008
 #   HEALTH_PATH=/login
 #   FRONTEND_URL=https://cloud-monitoring.vercel.app
-#   NGINX_SITE_NAME=cloud-monitoring-backend
+#   CADDY_CONFIG_PATH=/caminho/para/Caddyfile
 
 DOMAIN="${DOMAIN:-${1:-}}"
-EMAIL="${EMAIL:-${2:-}}"
 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:8008}"
 HEALTH_PATH="${HEALTH_PATH:-/login}"
 FRONTEND_URL="${FRONTEND_URL:-https://cloud-monitoring.vercel.app}"
-NGINX_SITE_NAME="${NGINX_SITE_NAME:-cloud-monitoring-backend}"
-NGINX_SITE_FILE="/etc/nginx/sites-available/${NGINX_SITE_NAME}"
+CADDY_CONFIG_PATH="${CADDY_CONFIG_PATH:-}"
+GENERATED_CADDYFILE="${GENERATED_CADDYFILE:-Caddyfile.cloud-monitoring.generated}"
 
 log() {
-  printf '[ec2-setup-https] %s\n' "$*"
+  printf '[ec2-caddy] %s\n' "$*"
 }
 
 fail() {
-  printf '[ec2-setup-https] ERRO: %s\n' "$*" >&2
+  printf '[ec2-caddy] ERRO: %s\n' "$*" >&2
   exit 1
 }
 
@@ -52,10 +54,6 @@ if [ -z "${DOMAIN}" ]; then
   fail "defina DOMAIN (ex.: back-cloud-monitor.duckdns.org)."
 fi
 
-if [ -z "${EMAIL}" ]; then
-  fail "defina EMAIL (ex.: seu-email@dominio.com)."
-fi
-
 if [[ "${BACKEND_UPSTREAM}" == */ ]]; then
   BACKEND_UPSTREAM="${BACKEND_UPSTREAM%/}"
 fi
@@ -66,124 +64,84 @@ fi
 
 require_cmd curl
 require_cmd awk
-require_cmd grep
-require_cmd sed
 require_cmd getent
-require_cmd systemctl
-require_cmd sudo
 
-if ! command -v apt-get >/dev/null 2>&1; then
-  fail "este script foi feito para Ubuntu/Debian (apt-get)."
-fi
-
-log "Validando resolucao DNS do dominio ${DOMAIN}..."
+log "Validando resolucao DNS de ${DOMAIN}..."
 DOMAIN_IP="$(getent ahostsv4 "${DOMAIN}" | awk 'NR==1 {print $1}')"
 [ -n "${DOMAIN_IP}" ] || fail "nao foi possivel resolver ${DOMAIN}."
 log "Dominio resolve para: ${DOMAIN_IP}"
 
 PUBLIC_IP="$(imds_get latest/meta-data/public-ipv4)"
-if [ -n "${PUBLIC_IP}" ]; then
-  log "IP publico da EC2: ${PUBLIC_IP}"
-  if [ "${DOMAIN_IP}" != "${PUBLIC_IP}" ]; then
-    fail "o dominio ${DOMAIN} nao aponta para esta EC2. Atualize o DNS e tente novamente."
-  fi
-else
-  log "Nao foi possivel ler IP publico via metadata. Seguindo sem esta validacao."
+if [ -n "${PUBLIC_IP}" ] && [ "${DOMAIN_IP}" != "${PUBLIC_IP}" ]; then
+  fail "o dominio ${DOMAIN} aponta para ${DOMAIN_IP}, mas esta EC2 e ${PUBLIC_IP}."
 fi
 
 log "Verificando backend local em ${BACKEND_UPSTREAM}${HEALTH_PATH}..."
 if ! curl -fsS -m 8 "${BACKEND_UPSTREAM}${HEALTH_PATH}" >/dev/null; then
-  fail "backend local nao respondeu. Suba o container antes: sudo docker compose up -d --build backend"
+  fail "backend local nao respondeu. Suba o container antes: docker compose up -d --build backend"
 fi
 log "Backend local respondeu."
 
-log "Instalando Nginx + Certbot..."
-sudo apt-get update -y
-sudo apt-get install -y nginx certbot python3-certbot-nginx
+cat > "${GENERATED_CADDYFILE}" <<EOF
+${DOMAIN} {
+    encode zstd gzip
 
-log "Configurando Nginx para proxy reverso..."
-sudo tee "${NGINX_SITE_FILE}" >/dev/null <<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${DOMAIN};
-
-    location / {
-        proxy_pass ${BACKEND_UPSTREAM};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
+    reverse_proxy ${BACKEND_UPSTREAM} {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
     }
 }
 EOF
 
-sudo ln -sfn "${NGINX_SITE_FILE}" "/etc/nginx/sites-enabled/${NGINX_SITE_NAME}"
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl enable nginx
-sudo systemctl restart nginx
+log "Bloco Caddy gerado em ${GENERATED_CADDYFILE}."
 
-log "Verificando Nginx local com Host=${DOMAIN}..."
-if ! curl -fsSI -m 10 -H "Host: ${DOMAIN}" "http://127.0.0.1${HEALTH_PATH}" >/dev/null; then
-  fail "Nginx nao conseguiu encaminhar para o backend. Revise BACKEND_UPSTREAM (${BACKEND_UPSTREAM})."
+if [ -n "${CADDY_CONFIG_PATH}" ]; then
+  [ -f "${CADDY_CONFIG_PATH}" ] || fail "CADDY_CONFIG_PATH nao encontrado: ${CADDY_CONFIG_PATH}"
+  if command -v caddy >/dev/null 2>&1; then
+    log "Validando Caddyfile informado..."
+    caddy validate --config "${CADDY_CONFIG_PATH}"
+  else
+    log "Comando caddy ausente neste shell. Validacao local ignorada."
+  fi
 fi
 
-log "Emitindo/renovando certificado HTTPS..."
-sudo certbot --nginx \
-  -d "${DOMAIN}" \
-  --non-interactive \
-  --agree-tos \
-  --email "${EMAIL}" \
-  --redirect \
-  --keep-until-expiring
-
-sudo systemctl enable certbot.timer >/dev/null 2>&1 || true
-sudo systemctl start certbot.timer >/dev/null 2>&1 || true
-
-log "Verificando endpoint HTTPS..."
-HTTPS_STATUS="$(curl -s -o /dev/null -w "%{http_code}" -m 10 "https://${DOMAIN}${HEALTH_PATH}")"
+log "Verificando endpoint HTTPS publico..."
+HTTPS_STATUS="$(curl -s -o /dev/null -w "%{http_code}" -m 12 "https://${DOMAIN}${HEALTH_PATH}" || true)"
 if [ "${HTTPS_STATUS}" != "200" ]; then
-  fail "HTTPS respondeu status ${HTTPS_STATUS} em https://${DOMAIN}${HEALTH_PATH}."
+  log "HTTPS ainda nao respondeu 200. Copie o bloco gerado para o Caddy compartilhado e recarregue."
+else
+  log "HTTPS OK."
 fi
-log "HTTPS OK (status 200)."
 
 log "Verificando preflight CORS para ${FRONTEND_URL}..."
 CORS_HEADERS="$(
-  curl -sSI -X OPTIONS -m 10 "https://${DOMAIN}/auth/login" \
+  curl -sSI -X OPTIONS -m 12 "https://${DOMAIN}/auth/login" \
     -H "Origin: ${FRONTEND_URL}" \
-    -H "Access-Control-Request-Method: POST"
+    -H "Access-Control-Request-Method: POST" || true
 )"
 
 CORS_STATUS="$(printf '%s\n' "${CORS_HEADERS}" | awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print code}')"
 CORS_ALLOW_ORIGIN="$(printf '%s\n' "${CORS_HEADERS}" | awk -F': ' 'tolower($1)=="access-control-allow-origin" {gsub("\r","",$2); print $2; exit}')"
 CORS_ALLOW_CREDENTIALS="$(printf '%s\n' "${CORS_HEADERS}" | awk -F': ' 'tolower($1)=="access-control-allow-credentials" {gsub("\r","",$2); print $2; exit}')"
 
-if [ "${CORS_STATUS}" != "204" ] && [ "${CORS_STATUS}" != "200" ]; then
-  fail "preflight CORS falhou (status ${CORS_STATUS}). Verifique CORS_ALLOWED_ORIGINS na .env.backend."
+if [ "${HTTPS_STATUS}" = "200" ]; then
+  [ "${CORS_STATUS}" = "204" ] || [ "${CORS_STATUS}" = "200" ] || fail "preflight CORS falhou (status ${CORS_STATUS})."
+  [ "${CORS_ALLOW_ORIGIN}" = "${FRONTEND_URL}" ] || fail "Access-Control-Allow-Origin (${CORS_ALLOW_ORIGIN}) difere de FRONTEND_URL (${FRONTEND_URL})."
+  [ "${CORS_ALLOW_CREDENTIALS}" = "true" ] || fail "Access-Control-Allow-Credentials deve ser true."
+  log "CORS OK."
 fi
 
-if [ "${CORS_ALLOW_ORIGIN}" != "${FRONTEND_URL}" ]; then
-  fail "Access-Control-Allow-Origin (${CORS_ALLOW_ORIGIN}) difere de FRONTEND_URL (${FRONTEND_URL})."
-fi
-
-if [ "${CORS_ALLOW_CREDENTIALS}" != "true" ]; then
-  fail "Access-Control-Allow-Credentials deve ser true para login com cookie."
-fi
-
-log "CORS OK."
-log "Concluido com sucesso."
 echo
-echo "Proximos passos obrigatorios:"
-echo "1) Atualize frontend/runtime-config.js para:"
+echo "Proximos passos:"
+echo "1) Copie ${GENERATED_CADDYFILE} para o Caddyfile compartilhado."
+echo "2) Recarregue o Caddy."
+echo "3) Configure no backend:"
+echo "   CORS_ALLOWED_ORIGINS=${FRONTEND_URL}"
+echo "   AUTH_COOKIE_SAMESITE=None"
+echo "   AUTH_COOKIE_SECURE=1"
+echo "   AUTH_BASE_URL=https://${DOMAIN}"
+echo "4) Configure no frontend:"
 echo "   window.CLOUDV2_API_BASE_URL = \"https://${DOMAIN}\";"
-echo "2) No GitHub Secrets, garanta:"
-echo "   BACKEND_URL=https://${DOMAIN}"
-echo "3) No Security Group da EC2, mantenha apenas:"
-echo "   - SSH 22 (seu IP/32)"
-echo "   - HTTP 80 (0.0.0.0/0)"
-echo "   - HTTPS 443 (0.0.0.0/0)"

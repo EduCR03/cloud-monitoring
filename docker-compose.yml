@@ -1,4 +1,25 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloud-monitoring-postgres
+    profiles:
+      - postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PUBLIC_PORT:-55432}:5432"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-cloudv2}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+    volumes:
+      - cloud_monitoring_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-cloudv2}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   backend:
     build:
       context: .
@@ -6,7 +27,7 @@ services:
     container_name: cloud-monitoring-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PUBLIC_PORT:-8008}:8008"
+      - "${BACKEND_BIND_ADDRESS:-0.0.0.0}:${BACKEND_PUBLIC_PORT:-8008}:8008"
     env_file:
       - .env.backend
     environment:
@@ -15,7 +36,9 @@ services:
       CLOUDV2_DEV_HOT_RELOAD: "0"
       REQUIRE_APPLY_TO_START: "0"
       HISTORY_MODE: "merge"
-      SQLITE_DB_PATH: "/data/telemetry.sqlite3"
+      DB_BACKEND: "${DB_BACKEND:-sqlite}"
+      SQLITE_DB_PATH: "${SQLITE_DB_PATH:-/data/telemetry.sqlite3}"
+      DATABASE_URL: "${DATABASE_URL:-}"
       CA_CERT_PATH: "/app/certs/amazon_ca.pem"
       CLIENT_CERT_PATH: "/app/certs/device.pem.crt"
       CLIENT_KEY_PATH: "/app/certs/private.pem.key"
@@ -33,3 +56,4 @@ services:
 
 volumes:
   cloud_monitoring_data:
+  cloud_monitoring_postgres_data:

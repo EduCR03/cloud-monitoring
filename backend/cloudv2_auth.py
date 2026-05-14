@@ -8,12 +8,13 @@ import os
 import re
 import secrets
 import smtplib
-import sqlite3
 import threading
 import time
 import uuid
 from email.message import EmailMessage
 from urllib.parse import quote
+
+from backend.cloudv2_db import connect_database, resolve_database_settings
 
 
 def _env_int(name, default, minimum=1):
@@ -261,17 +262,22 @@ class AuthEmailService:
 
 
 class AuthService:
-    def __init__(self, db_path, logger=None, email_service=None):
-        self.db_path = str(db_path or "").strip()
+    def __init__(self, db_path=None, db_backend="sqlite", database_url=None, logger=None, email_service=None):
+        self.db_settings = resolve_database_settings(
+            {
+                "db_backend": db_backend,
+                "sqlite_db_path": str(db_path or "").strip(),
+                "database_url": database_url,
+            }
+        )
+        self.db_path = self.db_settings.sqlite_db_path
+        self.db_backend = self.db_settings.backend
+        self.database_url = self.db_settings.database_url
         self.logger = logger
         self.email_service = email_service or AuthEmailService(logger=logger)
 
     def _connect(self):
-        conn = sqlite3.connect(self.db_path, timeout=3.0, check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA busy_timeout = 3000")
-        return conn
+        return connect_database(self.db_settings, auth_mode=True)
 
     def _normalize_email(self, email):
         return str(email or "").strip().lower()

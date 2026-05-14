@@ -1,19 +1,20 @@
 import json
 import os
 import re
-import sqlite3
 import statistics
 import threading
 import time
 import uuid
 
+from backend.cloudv2_db import connect_database, resolve_database_settings
 from backend.cloudv2_paths import resolve_data_dir
 from backend.cloudv2_dashboard import slugify
 from backend.cloudv2_time import ts_to_dashboard_str
 
 
 DEFAULT_DB_PATH = os.path.join(resolve_data_dir(), "telemetry.sqlite3")
-DEFAULT_MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "migrations")
+DEFAULT_MIGRATIONS_SQLITE_DIR = os.path.join(os.path.dirname(__file__), "migrations")
+DEFAULT_MIGRATIONS_POSTGRES_DIR = os.path.join(os.path.dirname(__file__), "migrations_postgres")
 PROBE_STATS_WINDOW_SEC = 30 * 24 * 3600
 TIMELINE_MINI_BINS = 96
 TIMELINE_MINI_DEFAULT_WINDOW_SEC = 30 * 24 * 3600
@@ -44,6 +45,20 @@ def _safe_float(value, default=None):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _row_get(row, key, default=None):
+    if row is None:
+        return default
+    try:
+        if isinstance(row, dict):
+            return row.get(key, default)
+        return row[key]
+    except Exception:
+        try:
+            return getattr(row, key)
+        except Exception:
+            return default
 
 
 def _safe_int(value, default=None):
@@ -462,9 +477,26 @@ def _resolve_timeline_disconnect_threshold(summary, settings=None):
 
 
 class TelemetryPersistence:
-    def __init__(self, db_path=None, migrations_dir=None, max_events_per_pivot=5000, log=None):
-        self.db_path = str(db_path or DEFAULT_DB_PATH)
-        self.migrations_dir = str(migrations_dir or DEFAULT_MIGRATIONS_DIR)
+    def __init__(
+        self,
+        db_path=None,
+        db_backend="sqlite",
+        database_url=None,
+        migrations_dir=None,
+        max_events_per_pivot=5000,
+        log=None,
+    ):
+        self.db_settings = resolve_database_settings(
+            {
+                "db_backend": db_backend,
+                "sqlite_db_path": str(db_path or DEFAULT_DB_PATH),
+                "database_url": database_url,
+            }
+        )
+        self.db_backend = self.db_settings.backend
+        self.db_path = self.db_settings.sqlite_db_path
+        self.database_url = self.db_settings.database_url
+        self.migrations_dir = str(migrations_dir or self._default_migrations_dir())
         self.max_events_per_pivot = max(100, int(max_events_per_pivot or 5000))
         self.log = log
 
@@ -476,17 +508,7 @@ class TelemetryPersistence:
             if self._conn is not None:
                 return
 
-            directory = os.path.dirname(self.db_path)
-            if directory:
-                os.makedirs(directory, exist_ok=True)
-
-            conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA journal_mode = WAL")
-            conn.execute("PRAGMA synchronous = NORMAL")
-            conn.execute("PRAGMA busy_timeout = 3000")
-
+            conn = connect_database(self.db_settings, auth_mode=False)
             self._conn = conn
             self._ensure_migrations_table_locked()
             self._apply_migrations_locked()
@@ -506,6 +528,11 @@ class TelemetryPersistence:
             raise RuntimeError("Persistence not started")
         return self._conn
 
+    def _default_migrations_dir(self):
+        if self.db_backend == "postgres":
+            return DEFAULT_MIGRATIONS_POSTGRES_DIR
+        return DEFAULT_MIGRATIONS_SQLITE_DIR
+
     def _ensure_migrations_table_locked(self):
         conn = self._require_conn_locked()
         with conn:
@@ -521,6 +548,8 @@ class TelemetryPersistence:
 
     def _iter_migration_files_locked(self):
         if not os.path.isdir(self.migrations_dir):
+            if self.db_backend == "postgres":
+                raise RuntimeError(f"Diretorio de migrations PostgreSQL ausente: {self.migrations_dir}")
             return []
 
         entries = []
@@ -553,13 +582,32 @@ class TelemetryPersistence:
             with open(path, "r", encoding="utf-8") as file:
                 script = file.read()
             with conn:
-                conn.executescript(script)
-                conn.execute(
-                    "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (?, ?, ?)",
-                    (version, name, time.time()),
-                )
+                self._run_migration_script_locked(conn, script)
+                self._insert_schema_migration_locked(conn, version, name, time.time())
             if self.log is not None:
                 self.log.info("Migration aplicada: v%s (%s)", version, name)
+
+    def _run_migration_script_locked(self, conn, script):
+        safe_script = str(script or "").strip()
+        if not safe_script:
+            return
+        if self.db_backend == "postgres":
+            with conn.cursor() as cursor:
+                cursor.execute(safe_script)
+            return
+        conn.executescript(safe_script)
+
+    def _insert_schema_migration_locked(self, conn, version, name, applied_at_ts):
+        if self.db_backend == "postgres":
+            conn.execute(
+                "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (%s, %s, %s)",
+                (int(version), str(name), float(applied_at_ts)),
+            )
+            return
+        conn.execute(
+            "INSERT INTO schema_migrations(version, name, applied_at_ts) VALUES (?, ?, ?)",
+            (int(version), str(name), float(applied_at_ts)),
+        )
 
     def _upsert_pivot_locked(self, conn, pivot_id, pivot_slug, seen_ts=None):
         now_ts = time.time()
@@ -1459,10 +1507,7 @@ class TelemetryPersistence:
                 resolved_run = self._query_run_row_locked(conn, run_id=normalized_run_id)
             else:
                 resolved_run = self.get_or_create_active_run(now_ts=current_ts, source=source)
-            if isinstance(resolved_run, sqlite3.Row):
-                resolved_run_id = str(resolved_run["run_id"] or "")
-            else:
-                resolved_run_id = str((resolved_run or {}).get("run_id") or "")
+            resolved_run_id = str(_row_get(resolved_run, "run_id", "") or "")
             if not resolved_run_id:
                 return None
 
@@ -1570,10 +1615,7 @@ class TelemetryPersistence:
                 resolved_run = self._query_run_row_locked(conn, run_id=normalized_run_id)
             else:
                 resolved_run = self.get_or_create_active_run(now_ts=current_ts, source=source)
-            if isinstance(resolved_run, sqlite3.Row):
-                resolved_run_id = str(resolved_run["run_id"] or "")
-            else:
-                resolved_run_id = str((resolved_run or {}).get("run_id") or "")
+            resolved_run_id = str(_row_get(resolved_run, "run_id", "") or "")
             if not resolved_run_id:
                 return None
 

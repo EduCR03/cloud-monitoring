@@ -7,6 +7,7 @@ OLDER_LEGACY_WEB_DIR = "dashboards"
 LEGACY_WEB_DIRS = (LEGACY_WEB_DIR, OLDER_LEGACY_WEB_DIR)
 DATA_SUBDIR = "data"
 WEB_DIR_ENV = "CLOUDV2_WEB_DIR"
+DATA_DIR_ENV = "CLOUDV2_DATA_DIR"
 
 
 def _normalize_path(path):
@@ -29,5 +30,8 @@ def resolve_web_dir():
 
 
 def resolve_data_dir(web_dir=None):
+    env_value = os.environ.get(DATA_DIR_ENV)
+    if env_value:
+        return _normalize_path(env_value)
     base_dir = _normalize_path(web_dir or resolve_web_dir())
     return os.path.join(base_dir, DATA_SUBDIR)
