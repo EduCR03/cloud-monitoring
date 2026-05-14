@@ -44,6 +44,23 @@ python scripts/migrate_sqlite_to_postgres.py \
 
 ## Validacao comparativa
 
+### Local com Docker
+
+No Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-postgres-validate.ps1
+```
+
+Isso sobe um PostgreSQL local em `127.0.0.1:55432` e roda:
+
+- smoke real de persistencia
+- smoke real de autenticacao
+- comparacao SQLite vs PostgreSQL
+- testes de migrations
+
+### Manual
+
 Executar comparacao lado a lado:
 
 ```bash
