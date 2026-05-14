@@ -2442,7 +2442,6 @@ function resetAllFilters() {
   if (ui.firmwareFilter) ui.firmwareFilter.value = "all";
 
   renderCards();
-  queueVisibleCardsConnectivityRefresh();
 }
 
 function queueVisibleCardsConnectivityRefresh() {
@@ -5493,14 +5492,12 @@ function wireEvents() {
     state.search = ui.searchInput.value || "";
     state.cardsPage = 1;
     renderCards();
-    queueVisibleCardsConnectivityRefresh();
   });
 
   ui.sortSelect.addEventListener("change", () => {
     state.sort = ui.sortSelect.value || "critical";
     state.cardsPage = 1;
     renderCards();
-    queueVisibleCardsConnectivityRefresh();
   });
 
   if (ui.technologyFilter) {
@@ -5508,7 +5505,6 @@ function wireEvents() {
       state.technologyFilter = normalizeFilterKey(ui.technologyFilter.value) || "all";
       state.cardsPage = 1;
       renderCards();
-      queueVisibleCardsConnectivityRefresh();
     });
   }
 
@@ -5517,7 +5513,6 @@ function wireEvents() {
       state.firmwareFilter = normalizeFilterKey(ui.firmwareFilter.value) || "all";
       state.cardsPage = 1;
       renderCards();
-      queueVisibleCardsConnectivityRefresh();
     });
   }
 
@@ -5526,7 +5521,6 @@ function wireEvents() {
       state.statusFilter = normalizeFilterKey(ui.statusFilterSelect.value) || "all";
       state.cardsPage = 1;
       renderCards();
-      queueVisibleCardsConnectivityRefresh();
     });
   }
 
@@ -5535,7 +5529,6 @@ function wireEvents() {
       state.connectivityFilter = normalizeFilterKey(ui.connectivityFilterSelect.value) || "all";
       state.cardsPage = 1;
       renderCards();
-      queueVisibleCardsConnectivityRefresh();
     });
   }
 
