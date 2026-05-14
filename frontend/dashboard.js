@@ -2452,7 +2452,7 @@ function queueVisibleCardsConnectivityRefresh() {
   }
   state.visibleConnectivityRefreshTimer = window.setTimeout(() => {
     state.visibleConnectivityRefreshTimer = null;
-    void refreshQualityOverrides({ force: true, visibleOnly: true });
+    void refreshQualityOverrides({ visibleOnly: true });
   }, 450);
 }
 
