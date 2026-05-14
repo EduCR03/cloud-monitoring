@@ -144,6 +144,17 @@ ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh
 
 O script para o backend antes da migracao para congelar o SQLite.
 Se `APPLY_CUTOVER` nao estiver ativo, o backend volta em SQLite depois da validacao.
+Antes de migrar, ele cria backup em `/data/backups/telemetry.<timestamp>.sqlite3`
+e registra o SHA256 ao lado do arquivo.
+
+Restaurar backup SQLite manualmente:
+
+```bash
+docker compose stop backend
+docker compose run --rm --no-deps backend \
+  sh -lc 'cp /data/backups/telemetry.TIMESTAMP.sqlite3 /data/telemetry.sqlite3'
+ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh
+```
 
 ## Riscos remanescentes
 

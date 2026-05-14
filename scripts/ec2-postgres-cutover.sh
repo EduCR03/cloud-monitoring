@@ -8,6 +8,10 @@ SAMPLE_LIMIT="${SAMPLE_LIMIT:-8}"
 APPLY_CUTOVER="${APPLY_CUTOVER:-0}"
 ROLLBACK_ONLY="${ROLLBACK_ONLY:-0}"
 REPORT_PATH="${REPORT_PATH:-/data/postgres-compare-report.json}"
+CUTOVER_ID="${CUTOVER_ID:-$(date -u +%Y%m%d%H%M%S)}"
+BACKUP_DIR="${BACKUP_DIR:-/data/backups}"
+SQLITE_BACKUP_PATH="${SQLITE_BACKUP_PATH:-${BACKUP_DIR}/telemetry.${CUTOVER_ID}.sqlite3}"
+SQLITE_BACKUP_SHA256_PATH="${SQLITE_BACKUP_SHA256_PATH:-${SQLITE_BACKUP_PATH}.sha256}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
@@ -77,6 +81,28 @@ rollback_to_sqlite() {
   echo "Rollback aplicado para SQLite."
 }
 
+create_sqlite_backup() {
+  echo "Criando backup SQLite congelado..."
+  docker compose run --rm --no-deps \
+    -e DB_BACKEND=sqlite \
+    -e SQLITE_PATH="${SQLITE_PATH}" \
+    -e SQLITE_BACKUP_PATH="${SQLITE_BACKUP_PATH}" \
+    -e SQLITE_BACKUP_SHA256_PATH="${SQLITE_BACKUP_SHA256_PATH}" \
+    backend \
+    sh -lc '
+      set -eu
+      if [ ! -f "${SQLITE_PATH}" ]; then
+        echo "SQLite ausente: ${SQLITE_PATH}" >&2
+        exit 1
+      fi
+      mkdir -p "$(dirname "${SQLITE_BACKUP_PATH}")"
+      cp "${SQLITE_PATH}" "${SQLITE_BACKUP_PATH}"
+      sha256sum "${SQLITE_BACKUP_PATH}" > "${SQLITE_BACKUP_SHA256_PATH}"
+      ls -lh "${SQLITE_BACKUP_PATH}"
+      cat "${SQLITE_BACKUP_SHA256_PATH}"
+    '
+}
+
 if [ "${ROLLBACK_ONLY}" = "1" ]; then
   rollback_to_sqlite
   exit 0
@@ -102,6 +128,8 @@ cp .env.backend "${ENV_BACKUP}"
 echo "Parando backend para congelar SQLite..."
 docker compose stop backend || true
 BACKEND_STOPPED=1
+
+create_sqlite_backup
 
 echo "Migrando e validando PostgreSQL em container isolado..."
 docker compose run --rm --no-deps \
@@ -136,4 +164,5 @@ CUTOVER_DONE=1
 docker compose ps backend
 
 echo "Cutover PostgreSQL aplicado."
+echo "Backup SQLite: ${SQLITE_BACKUP_PATH}"
 echo "Rollback: ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh"
