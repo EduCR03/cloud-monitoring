@@ -52,6 +52,12 @@ No Windows:
 powershell -ExecutionPolicy Bypass -File .\scripts\dev-postgres-validate.ps1
 ```
 
+No Linux/EC2:
+
+```bash
+bash scripts/dev-postgres-validate.sh
+```
+
 Isso sobe um PostgreSQL local em `127.0.0.1:55432` e roda:
 
 - smoke real de persistencia
