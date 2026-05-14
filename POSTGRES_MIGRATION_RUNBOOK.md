@@ -86,6 +86,20 @@ python scripts/postgres_real_validation.py \
 Esse modo trunca o destino PostgreSQL antes da copia.
 Por isso exige `--confirm-target-truncate`.
 
+No EC2, usando o volume real do Docker:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+VALIDATION_MODE=migrate-and-compare \
+CONFIRM_TARGET_TRUNCATE=1 \
+SAMPLE_LIMIT=8 \
+bash scripts/ec2-postgres-real-validate.sh
+```
+
+Esse wrapper para o backend apenas em `migrate-and-compare`,
+para congelar o SQLite durante a copia comparativa.
+Ele nao altera `DB_BACKEND` e nao aplica cutover.
+
 ### Local com Docker
 
 No Windows:
