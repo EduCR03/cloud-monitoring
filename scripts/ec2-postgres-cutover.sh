@@ -15,6 +15,9 @@ SQLITE_BACKUP_SHA256_PATH="${SQLITE_BACKUP_SHA256_PATH:-${SQLITE_BACKUP_PATH}.sh
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_SLEEP_SEC="${HEALTHCHECK_SLEEP_SEC:-2}"
 REQUIRE_EMPTY_POSTGRES="${REQUIRE_EMPTY_POSTGRES:-0}"
+RUN_HTTP_SMOKE="${RUN_HTTP_SMOKE:-1}"
+SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:8008}"
+SMOKE_REPORT_JSON="${SMOKE_REPORT_JSON:-/data/postgres-http-smoke-report.json}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
@@ -139,6 +142,20 @@ run_postgres_preflight() {
       "${extra_args[@]}"
 }
 
+run_http_smoke() {
+  if [ "${RUN_HTTP_SMOKE}" != "1" ]; then
+    return 0
+  fi
+  echo "Rodando smoke HTTP read-only..."
+  docker compose exec -T \
+    -e SMOKE_BASE_URL="${SMOKE_BASE_URL}" \
+    -e SMOKE_EMAIL="${SMOKE_EMAIL:-}" \
+    -e SMOKE_PASSWORD="${SMOKE_PASSWORD:-}" \
+    -e SMOKE_REPORT_JSON="${SMOKE_REPORT_JSON}" \
+    backend \
+    python scripts/http_smoke_check.py
+}
+
 if [ "${ROLLBACK_ONLY}" = "1" ]; then
   rollback_to_sqlite
   exit 0
@@ -187,6 +204,7 @@ if [ "${APPLY_CUTOVER}" != "1" ]; then
   echo "Para aplicar: APPLY_CUTOVER=1 DATABASE_URL=... bash scripts/ec2-postgres-cutover.sh"
   docker compose up -d backend
   wait_for_backend_health
+  run_http_smoke
   BACKEND_STOPPED=0
   docker compose ps backend
   exit 0
@@ -199,6 +217,7 @@ set_env_value "SQLITE_DB_PATH" "${SQLITE_PATH}"
 
 docker compose up -d backend
 wait_for_backend_health
+run_http_smoke
 BACKEND_STOPPED=0
 CUTOVER_DONE=1
 docker compose ps backend

@@ -118,6 +118,28 @@ python scripts/validate_postgres_migration.py \
 - mapa
 - cards de historico horario
 
+## Smoke HTTP
+
+Validar backend sem autenticar:
+
+```bash
+SMOKE_BASE_URL=http://127.0.0.1:8008 \
+python scripts/http_smoke_check.py
+```
+
+Validar login e endpoints read-only:
+
+```bash
+SMOKE_BASE_URL=https://seu-backend \
+SMOKE_EMAIL=admin@example.com \
+SMOKE_PASSWORD='senha fora do git' \
+python scripts/http_smoke_check.py
+```
+
+No cutover EC2/RDS, o smoke roda depois do healthcheck.
+Se `SMOKE_EMAIL` e `SMOKE_PASSWORD` existirem, ele testa login e dados do painel.
+Sem credenciais, ele valida somente `/api/health`.
+
 ## Rollback
 
 Se qualquer validacao falhar:
