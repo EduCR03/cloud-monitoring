@@ -11,6 +11,9 @@ def test_ec2_cutover_script_has_safe_guards():
 
     assert "APPLY_CUTOVER" in content
     assert "ROLLBACK_ONLY" in content
+    assert "ROLLBACK_SQLITE_BACKUP_PATH" in content
+    assert "rollback_sqlite_applied" in content
+    assert "sha256sum -c" in content
     assert "restore_on_error" in content
     assert "trap 'restore_on_error' ERR" in content
     assert "validate_postgres_migration.py" in content
@@ -43,6 +46,7 @@ def test_runbook_documents_ec2_cutover_and_rollback():
     assert "Cutover EC2/RDS" in content
     assert "APPLY_CUTOVER=1" in content
     assert "ROLLBACK_ONLY=1" in content
+    assert "ROLLBACK_SQLITE_BACKUP_PATH=/data/backups/telemetry.TIMESTAMP.sqlite3" in content
     assert "/data/backups/telemetry.<timestamp>.sqlite3" in content
     assert "Restaurar backup SQLite manualmente" in content
     assert "/api/health" in content

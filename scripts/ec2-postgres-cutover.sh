@@ -7,6 +7,7 @@ SQLITE_PATH="${SQLITE_PATH:-/data/telemetry.sqlite3}"
 SAMPLE_LIMIT="${SAMPLE_LIMIT:-8}"
 APPLY_CUTOVER="${APPLY_CUTOVER:-0}"
 ROLLBACK_ONLY="${ROLLBACK_ONLY:-0}"
+ROLLBACK_SQLITE_BACKUP_PATH="${ROLLBACK_SQLITE_BACKUP_PATH:-}"
 REPORT_PATH="${REPORT_PATH:-/data/postgres-compare-report.json}"
 CUTOVER_ID="${CUTOVER_ID:-$(date -u +%Y%m%d%H%M%S)}"
 BACKUP_DIR="${BACKUP_DIR:-/data/backups}"
@@ -101,10 +102,34 @@ wait_for_backend_health() {
 }
 
 rollback_to_sqlite() {
+  if [ -n "${ROLLBACK_SQLITE_BACKUP_PATH}" ]; then
+    echo "Restaurando SQLite de backup informado..."
+    docker compose stop backend || true
+    BACKEND_STOPPED=1
+    docker compose run --rm --no-deps \
+      -e SQLITE_PATH="${SQLITE_PATH}" \
+      -e ROLLBACK_SQLITE_BACKUP_PATH="${ROLLBACK_SQLITE_BACKUP_PATH}" \
+      backend \
+      sh -lc '
+        set -eu
+        if [ ! -f "${ROLLBACK_SQLITE_BACKUP_PATH}" ]; then
+          echo "Backup SQLite ausente: ${ROLLBACK_SQLITE_BACKUP_PATH}" >&2
+          exit 1
+        fi
+        if [ -f "${ROLLBACK_SQLITE_BACKUP_PATH}.sha256" ]; then
+          cd "$(dirname "${ROLLBACK_SQLITE_BACKUP_PATH}")"
+          sha256sum -c "$(basename "${ROLLBACK_SQLITE_BACKUP_PATH}.sha256")"
+        fi
+        cp "${ROLLBACK_SQLITE_BACKUP_PATH}" "${SQLITE_PATH}"
+      '
+  fi
   set_env_value "DB_BACKEND" "sqlite"
   set_env_value "SQLITE_DB_PATH" "${SQLITE_PATH}"
   docker compose up -d backend
   wait_for_backend_health
+  run_http_smoke
+  write_cutover_manifest "rollback_sqlite_applied" "Rollback para SQLite executado."
+  BACKEND_STOPPED=0
   docker compose ps backend
   echo "Rollback aplicado para SQLite."
 }

@@ -180,6 +180,14 @@ Voltar para SQLite:
 ROLLBACK_ONLY=1 bash scripts/ec2-postgres-cutover.sh
 ```
 
+Voltar para SQLite restaurando um backup especifico:
+
+```bash
+ROLLBACK_ONLY=1 \
+ROLLBACK_SQLITE_BACKUP_PATH=/data/backups/telemetry.TIMESTAMP.sqlite3 \
+bash scripts/ec2-postgres-cutover.sh
+```
+
 O script para o backend antes da migracao para congelar o SQLite.
 Se `APPLY_CUTOVER` nao estiver ativo, o backend volta em SQLite depois da validacao.
 Antes de parar o backend, ele valida conexao/permissoes do PostgreSQL/RDS.
