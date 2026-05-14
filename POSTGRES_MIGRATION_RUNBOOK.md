@@ -60,6 +60,32 @@ DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
 python scripts/postgres_preflight.py --require-empty
 ```
 
+### Validacao real consolidada
+
+Preflight sem migrar:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+python scripts/postgres_real_validation.py \
+  --sqlite-path /data/telemetry.sqlite3 \
+  --mode preflight
+```
+
+Migrar para PostgreSQL, comparar SQLite vs PostgreSQL e gerar relatorio:
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/cloudv2 \
+python scripts/postgres_real_validation.py \
+  --sqlite-path /data/telemetry.sqlite3 \
+  --mode migrate-and-compare \
+  --confirm-target-truncate \
+  --sample-limit 8 \
+  --report-json /data/postgres-real-validation.json
+```
+
+Esse modo trunca o destino PostgreSQL antes da copia.
+Por isso exige `--confirm-target-truncate`.
+
 ### Local com Docker
 
 No Windows:
