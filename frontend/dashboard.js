@@ -2452,8 +2452,8 @@ function queueVisibleCardsConnectivityRefresh() {
   }
   state.visibleConnectivityRefreshTimer = window.setTimeout(() => {
     state.visibleConnectivityRefreshTimer = null;
-    void refreshQualityOverrides({ force: true });
-  }, 120);
+    void refreshQualityOverrides({ force: true, visibleOnly: true });
+  }, 450);
 }
 
 function arraysShallowEqual(a, b) {
@@ -4380,6 +4380,7 @@ async function refreshPivot(options = {}) {
 async function refreshQualityOverrides(options = {}) {
   const skipRender = !!options.skipRender;
   const forceRefresh = !!options.force;
+  const visibleOnly = !!options.visibleOnly;
   const pivots = state.pivots || [];
   if (!pivots.length) {
     state.qualityOverridesByPivotId = {};
@@ -4431,7 +4432,7 @@ async function refreshQualityOverrides(options = {}) {
   pushPriority(selectedPivotId);
   for (const pivotId of visiblePivotIds) pushPriority(pivotId);
 
-  const allPivotIds = [...pivotMetaById.keys()];
+  const allPivotIds = visibleOnly ? [] : [...pivotMetaById.keys()];
   const orderedPivotIds = [
     ...priorityOrderedIds,
     ...allPivotIds.filter((pivotId) => !prioritySet.has(pivotId)),
