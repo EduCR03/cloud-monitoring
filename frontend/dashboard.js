@@ -3451,6 +3451,11 @@ function wireProtectedEditableInputs() {
   ].filter(Boolean);
 
   protectedInputs.forEach((input) => {
+    input.addEventListener("focus", () => {
+      if (String(input.value || "").trim() === "-") {
+        input.value = "";
+      }
+    });
     input.addEventListener("input", () => {
       input.dataset.userDirty = "1";
     });
