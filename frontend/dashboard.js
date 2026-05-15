@@ -5440,6 +5440,7 @@ async function sendSelectedPivotConfig(idp = "03") {
   const normalizedIdp = String(idp || "03").padStart(2, "0");
   const pivotId = String(state.selectedPivot || "").trim();
   if (!pivotId || state.configSendInFlightByIdp[normalizedIdp]) return;
+  const values = readConfigValues(normalizedIdp);
 
   state.configSendInFlightByIdp[normalizedIdp] = true;
   renderSettingsModalContent();
@@ -5451,7 +5452,7 @@ async function sendSelectedPivotConfig(idp = "03") {
       body: JSON.stringify({
         pivot_id: pivotId,
         idp: normalizedIdp,
-        values: readConfigValues(normalizedIdp),
+        values,
       }),
     });
     const data = await response.json();
