@@ -64,6 +64,60 @@ class RssiPanelPayloadTests(unittest.TestCase):
             finally:
                 persistence.stop()
 
+    def test_panel_payload_keeps_latest_rssi_points_when_limited(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = os.path.join(temp_dir, "telemetry.sqlite3")
+            persistence = TelemetryPersistence(db_path=db_path, max_events_per_pivot=3)
+            persistence.start()
+            try:
+                pivot_id = "PivotA_1"
+                base_ts = 1_700_000_000.0
+
+                run = persistence.get_or_create_active_run(now_ts=base_ts, source="test")
+                session = persistence.get_or_create_active_session(
+                    pivot_id,
+                    pivot_slug="pivota-1",
+                    now_ts=base_ts,
+                    source="test",
+                    run_id=run["run_id"],
+                )
+                session_id = session["session_id"]
+
+                persistence.upsert_snapshot(
+                    pivot_id,
+                    session_id,
+                    {
+                        "pivot_id": pivot_id,
+                        "session_id": session_id,
+                        "run_id": run["run_id"],
+                        "updated_at_ts": base_ts + 10,
+                        "summary": {
+                            "status": {"code": "green"},
+                            "quality": {"code": "green"},
+                        },
+                    },
+                    updated_at_ts=base_ts + 10,
+                )
+
+                for index, rssi in enumerate([10, 11, 12, 13, 14], start=1):
+                    persistence.insert_ping_rssi_point(pivot_id, session_id, ts=base_ts + index, rssi=rssi)
+
+                points = persistence.fetch_ping_rssi_points(
+                    pivot_id,
+                    session_id,
+                    limit=3,
+                )
+                self.assertEqual(
+                    [(item["ts"], item["rssi"]) for item in points],
+                    [
+                        (base_ts + 3, 12),
+                        (base_ts + 4, 13),
+                        (base_ts + 5, 14),
+                    ],
+                )
+            finally:
+                persistence.stop()
+
 
 if __name__ == "__main__":
     unittest.main()

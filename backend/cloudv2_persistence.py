@@ -2543,14 +2543,14 @@ class TelemetryPersistence:
                 SELECT *
                 FROM ping_rssi_points
                 WHERE pivot_id = ? AND session_id = ?
-                ORDER BY ts ASC, id ASC
+                ORDER BY ts DESC, id DESC
                 LIMIT ?
                 """,
                 (normalized_id, normalized_session, safe_limit),
             ).fetchall()
 
         points = []
-        for row in rows:
+        for row in reversed(rows):
             ts_value = _safe_float(row["ts"], None)
             rssi_value = _safe_int(row["rssi"], None)
             if rssi_value is None or rssi_value < 0 or rssi_value > 31:
