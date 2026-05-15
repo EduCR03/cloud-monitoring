@@ -3783,10 +3783,88 @@ function closeSettingsModal() {
   ui.pivotSettingsBtn?.focus();
 }
 
+function describeShutdownOrigin(value) {
+  const raw = text(value, "").trim();
+  const normalized = raw.toLowerCase();
+  if (normalized === "actuation_app") return "Controle interno da placa";
+  if (normalized === "scheduling") return "Agendamento";
+  if (normalized === "system_monitoring") return "Monitoramento interno";
+  if (normalized === "soil_app") return "Aplicativo Soil";
+  if (normalized === "nimbus_app") return "Aplicativo Nimbus";
+  return raw || "-";
+}
+
+function describeShutdownIdp(value) {
+  const raw = text(value, "").trim();
+  const parsed = Number.parseInt(raw, 10);
+  if (parsed === 30) return "Desligamento manual";
+  if (parsed === 1) return "Aplicativo externo";
+  if ([14, 15, 16, 17].includes(parsed)) return "Agendamento";
+  return raw ? `IDP ${raw}` : "-";
+}
+
+function describeShutdownBarrier(value) {
+  const raw = text(value, "").trim().toLowerCase();
+  if (raw === "1" || raw === "true") return "Sim, perto da barreira";
+  if (raw === "0" || raw === "false") return "Não";
+  return "-";
+}
+
+function parseShutdownHistoryPayload(rawPayload, topic, fallback = {}) {
+  const raw = text(rawPayload, "").trim();
+  if (!raw.startsWith("#") || !raw.endsWith("$")) return null;
+  const parts = raw.slice(1, -1).split("-").map((part) => part.trim());
+  if (parts[0] !== "28" || parts.length < 2) return null;
+
+  const physicalBarrierRaw = parts.length > 6 ? parts[6] : "";
+  return {
+    idp: "28",
+    pivot_id: parts.length > 1 ? parts[1] : "",
+    command_origin: parts.length > 2 ? parts[2] : "",
+    shutdown_idp: parts.length > 3 ? parts[3] : "",
+    schedule_id: parts.length > 4 ? parts[4] : "",
+    shutdown_reason: parts.length > 5 ? parts[5] : "",
+    physical_barrier: physicalBarrierRaw === "1" ? true : (physicalBarrierRaw === "0" ? false : null),
+    position: parts.length > 7 ? parts[7] : "",
+    board_datetime: parts.length > 8 ? parts.slice(8).join("-") : "",
+    ts: fallback.ts,
+    at: fallback.at,
+    topic: topic || fallback.topic || "-",
+    raw_payload: raw,
+    command_origin_label: describeShutdownOrigin(parts.length > 2 ? parts[2] : ""),
+    shutdown_idp_label: describeShutdownIdp(parts.length > 3 ? parts[3] : ""),
+    physical_barrier_label: describeShutdownBarrier(physicalBarrierRaw),
+  };
+}
+
+function buildShutdownHistoryFromTimeline() {
+  const pivot = state.pivotData || {};
+  const events = Array.isArray(pivot.timeline) ? pivot.timeline : [];
+  const nowTs = Date.now() / 1000;
+  const cutoffTs = nowTs - (30 * 24 * 3600);
+  const history = [];
+  for (const event of events) {
+    const topic = resolveConnectivityEventSourceTopic(event);
+    if (topic !== "cloudv2-shutdown" && topic !== "cloudv2-error") continue;
+    const eventTs = Number(event && event.ts);
+    if (Number.isFinite(eventTs) && eventTs < cutoffTs) continue;
+    const parsed = parseShutdownHistoryPayload(resolveConnectivityEventRawPayload(event), topic, event || {});
+    if (parsed) history.push(parsed);
+  }
+  return history;
+}
+
 function getSelectedShutdownHistory() {
   const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
   const history = Array.isArray(summary.shutdown_history) ? summary.shutdown_history : [];
-  return history.filter((item) => item && typeof item === "object");
+  const merged = [...history.filter((item) => item && typeof item === "object"), ...buildShutdownHistoryFromTimeline()];
+  const byPayload = new Map();
+  for (const item of merged) {
+    const key = text(item.raw_payload, "").trim();
+    if (!key || byPayload.has(key)) continue;
+    byPayload.set(key, item);
+  }
+  return [...byPayload.values()].sort((left, right) => Number(right.ts || 0) - Number(left.ts || 0));
 }
 
 function formatShutdownValue(value) {
