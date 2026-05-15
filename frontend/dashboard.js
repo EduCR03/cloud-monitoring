@@ -263,6 +263,7 @@ const state = {
   rssiPreset: "30d",
   rssiCustomFrom: "",
   rssiCustomTo: "",
+  shutdownsSelectedDate: "",
   timelinePage: 1,
   timelinePageSize: 25,
   timelineTopicFilter: "global",
@@ -3837,6 +3838,38 @@ function parseShutdownHistoryPayload(rawPayload, topic, fallback = {}) {
   };
 }
 
+function parseShutdownBoardDate(value) {
+  const raw = text(value, "").trim();
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})_(\d{2}):(\d{2}):(\d{2})$/);
+  if (!match) {
+    return { dateKey: "", display: raw || "-", time: "-" };
+  }
+  const [, day, month, year, hour, minute, second] = match;
+  return {
+    dateKey: `${year}-${month}-${day}`,
+    display: `${day}/${month}/${year}, ${hour}:${minute}:${second}`,
+    time: `${hour}:${minute}:${second}`,
+  };
+}
+
+function formatShutdownDateLabel(dateKey) {
+  const raw = text(dateKey, "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return raw || "-";
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function enrichShutdownEvent(event) {
+  const boardDate = parseShutdownBoardDate(event.board_datetime);
+  return {
+    ...event,
+    board_date_key: boardDate.dateKey || text(event.at, "").slice(0, 10),
+    board_datetime_display: boardDate.display,
+    board_time_display: boardDate.time,
+    backend_datetime_display: formatTimestampFromTsOrValue(event.ts, event.at, true),
+  };
+}
+
 function buildShutdownHistoryFromTimeline() {
   const pivot = state.pivotData || {};
   const events = Array.isArray(pivot.timeline) ? pivot.timeline : [];
@@ -3864,7 +3897,9 @@ function getSelectedShutdownHistory() {
     if (!key || byPayload.has(key)) continue;
     byPayload.set(key, item);
   }
-  return [...byPayload.values()].sort((left, right) => Number(right.ts || 0) - Number(left.ts || 0));
+  return [...byPayload.values()]
+    .map(enrichShutdownEvent)
+    .sort((left, right) => Number(right.ts || 0) - Number(left.ts || 0));
 }
 
 function formatShutdownValue(value) {
@@ -3925,7 +3960,7 @@ function buildShutdownEventFields(event) {
   ];
 }
 
-function renderShutdownsModalContent() {
+function renderShutdownsModalContentLegacy() {
   if (!ui.shutdownsModalBody) return;
   const pivotId = text(state.selectedPivot || (state.pivotData || {}).pivot_id, "Pivô");
   if (ui.shutdownsModalTitle) {
@@ -3971,6 +4006,120 @@ function renderShutdownsModalContent() {
       `;
     })
     .join("");
+}
+
+function buildShutdownDateOptions(history) {
+  const dates = [];
+  const seen = new Set();
+  for (const event of history) {
+    const dateKey = text(event.board_date_key, "").trim();
+    if (!dateKey || seen.has(dateKey)) continue;
+    seen.add(dateKey);
+    dates.push(dateKey);
+  }
+  return dates.sort().reverse();
+}
+
+function renderShutdownsModalContent() {
+  if (!ui.shutdownsModalBody) return;
+  const pivotId = text(state.selectedPivot || (state.pivotData || {}).pivot_id, "Pivo");
+  if (ui.shutdownsModalTitle) {
+    ui.shutdownsModalTitle.textContent = `Ultimos desligas - ${pivotId}`;
+  }
+
+  const history = getSelectedShutdownHistory();
+  if (!history.length) {
+    ui.shutdownsModalBody.innerHTML = `
+      <div class="shutdown-empty">
+        Nenhum desliga registrado no ultimo mes para este pivo.
+      </div>
+    `;
+    return;
+  }
+
+  const dateOptions = buildShutdownDateOptions(history);
+  if (!dateOptions.includes(state.shutdownsSelectedDate)) {
+    state.shutdownsSelectedDate = dateOptions[0] || "";
+  }
+  const selectedDate = state.shutdownsSelectedDate;
+  const visibleHistory = selectedDate
+    ? history.filter((event) => text(event.board_date_key, "").trim() === selectedDate)
+    : history;
+  const optionsHtml = dateOptions
+    .map((dateKey) => `<option value="${escapeHtml(dateKey)}"${dateKey === selectedDate ? " selected" : ""}>${escapeHtml(formatShutdownDateLabel(dateKey))}</option>`)
+    .join("");
+
+  const cardsHtml = visibleHistory
+    .map((event) => {
+      const reason = formatShutdownValue(event.shutdown_reason);
+      const actor = formatShutdownValue(event.command_origin_label);
+      const position = formatShutdownValue(event.position);
+      const scheduleText = formatShutdownValue(event.schedule_id) === "0"
+        ? "Nao foi por agendamento"
+        : `Agendamento ${formatShutdownValue(event.schedule_id)}`;
+      return `
+        <article class="shutdown-card">
+          <div class="shutdown-card-head">
+            <div>
+              <strong>${escapeHtml(reason)}</strong>
+              <span>${escapeHtml(actor)} desligou o pivo</span>
+            </div>
+            <time>${escapeHtml(formatShutdownValue(event.board_time_display))}</time>
+          </div>
+          <div class="shutdown-story">
+            <span>Quem</span><strong>${escapeHtml(actor)}</strong>
+            <span>Motivo</span><strong>${escapeHtml(reason)}</strong>
+            <span>Posição</span><strong>${escapeHtml(position)}</strong>
+            <span>Quando</span><strong>${escapeHtml(formatShutdownValue(event.board_datetime_display))}</strong>
+          </div>
+          <div class="shutdown-detail-row">
+            <div>
+              <span>Como</span>
+              <strong>${escapeHtml(formatShutdownValue(event.shutdown_idp_label))}</strong>
+            </div>
+            <div>
+              <span>Agendamento</span>
+              <strong>${escapeHtml(scheduleText)}</strong>
+            </div>
+            <div>
+              <span>Barreira</span>
+              <strong>${escapeHtml(formatShutdownBarrier(event))}</strong>
+            </div>
+            <div>
+              <span>Recebido</span>
+              <strong>${escapeHtml(formatShutdownValue(event.backend_datetime_display))}</strong>
+            </div>
+          </div>
+          <details class="shutdown-payload">
+            <summary>Ver mensagem original</summary>
+            <pre>${escapeHtml(formatShutdownValue(event.raw_payload))}</pre>
+          </details>
+        </article>
+      `;
+    })
+    .join("");
+
+  ui.shutdownsModalBody.innerHTML = `
+    <div class="shutdown-filter-bar">
+      <div>
+        <span>Dia selecionado</span>
+        <strong>${escapeHtml(String(visibleHistory.length))} desliga(s)</strong>
+      </div>
+      <label>
+        <span>Data</span>
+        <select id="shutdownsDateSelect">${optionsHtml}</select>
+      </label>
+    </div>
+    <div class="shutdown-list">${cardsHtml}</div>
+  `;
+
+  const dateSelect = document.getElementById("shutdownsDateSelect");
+  if (dateSelect) {
+    dateSelect.addEventListener("change", () => {
+      state.shutdownsSelectedDate = dateSelect.value || "";
+      renderShutdownsModalContent();
+    });
+  }
 }
 
 function openShutdownsModal() {
