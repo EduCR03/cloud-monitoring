@@ -177,6 +177,13 @@ test("sorting: pivots with more samples come first", () => {
   assert.ok(compare > 0);
 });
 
+test("sorting: identifica pivos sem latitude e longitude", () => {
+  assert.equal(_test.hasPivotCoordinates({ pivot_id: "A", latitude: 0, longitude: 0 }), false);
+  assert.equal(_test.hasPivotCoordinates({ pivot_id: "B", latitude: -22.1, longitude: -45.2 }), true);
+  assert.equal(_test.hasPivotCoordinates({ pivot_id: "C", latitude: null, longitude: -45.2 }), false);
+  assert.equal(_test.hasPivotCoordinates({ pivot_id: "D", summary: { latitude: -22.1, longitude: -45.2 } }), true);
+});
+
 test("sorting: % conectado ordena do maior para o menor com desempate por pivô", () => {
   const pivots = [
     { pivot_id: "B" },

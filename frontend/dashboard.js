@@ -1336,6 +1336,7 @@ function extractPivotCoordinates(pivot) {
   let latitude = null;
   let longitude = null;
   for (const candidate of latitudeCandidates) {
+    if (candidate === null || candidate === undefined || String(candidate).trim() === "") continue;
     const parsed = Number(candidate);
     if (Number.isFinite(parsed)) {
       latitude = parsed;
@@ -1343,6 +1344,7 @@ function extractPivotCoordinates(pivot) {
     }
   }
   for (const candidate of longitudeCandidates) {
+    if (candidate === null || candidate === undefined || String(candidate).trim() === "") continue;
     const parsed = Number(candidate);
     if (Number.isFinite(parsed)) {
       longitude = parsed;
@@ -1350,6 +1352,16 @@ function extractPivotCoordinates(pivot) {
     }
   }
   return { latitude, longitude };
+}
+
+function hasPivotCoordinates(pivot) {
+  const coordinates = extractPivotCoordinates(pivot);
+  if (coordinates.latitude === null || coordinates.longitude === null) return false;
+  const latitude = Number(coordinates.latitude);
+  const longitude = Number(coordinates.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  if (latitude === 0 && longitude === 0) return false;
+  return true;
 }
 
 function formatPivotCoordinates(latitude, longitude) {
@@ -2239,6 +2251,13 @@ function applyFilterSort() {
       return compareByProbeResponseRatioDesc(a, b, ap, bp, aActivity, bActivity);
     }
     if (state.sort === "pivot_asc") return ap.localeCompare(bp);
+    if (state.sort === "missing_coordinates") {
+      const aMissing = hasPivotCoordinates(a) ? 0 : 1;
+      const bMissing = hasPivotCoordinates(b) ? 0 : 1;
+      if (aMissing !== bMissing) return bMissing - aMissing;
+      if (aActivity !== bActivity) return bActivity - aActivity;
+      return ap.localeCompare(bp);
+    }
     if (state.sort === "samples_desc") return compareBySamplesDesc(a, b, ap, bp, aActivity, bActivity);
     if (state.sort === "connected_pct_desc") {
       return compareByConnectedPctDesc(a, b, ap, bp, state.connectivitySummaryByPivotId);
@@ -5952,6 +5971,7 @@ if (typeof module !== "undefined" && module.exports) {
       getExpectedPivotsPending,
       setExpectedPivotsPendingState,
       removeExpectedPivotPendingState,
+      hasPivotCoordinates,
       shouldRenderRssiPanel,
       collectRssiChartPoints,
       resolveRssiChartDomain,
