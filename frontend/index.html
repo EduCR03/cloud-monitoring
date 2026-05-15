@@ -729,6 +729,28 @@
             </label>
           </div>
         </section>
+
+        <section class="settings-config-card">
+          <div class="settings-section-head">
+            <div>
+              <h3>Modo de comunicação</h3>
+              <p id="commMainModeConfigHint">Peça a configuração para preencher os campos.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="requestCommMainModeConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendCommMainModeConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
+          </div>
+          <div class="pivot-config-grid" aria-label="Campos de configuração do modo de comunicação">
+            <label>
+              <span>Modo principal</span>
+              <select id="commMainModeConfigMode">
+                <option value="COMM_MQTT">COMM_MQTT</option>
+                <option value="COMM_RF">COMM_RF</option>
+              </select>
+            </label>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -736,6 +758,6 @@
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515p"></script>
+  <script src="dashboard.js?v=20260515q"></script>
 </body>
 </html>

@@ -442,6 +442,23 @@ def parse_virtual_barrier_config_payload(parsed):
     }
 
 
+def parse_comm_main_mode_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("31",):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    return {
+        "comm_main_mode": _normalize_text(parts[2]) if len(parts) > 2 else None,
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -467,6 +484,7 @@ VIRTUAL_BARRIER_CONFIG_VALUE_KEYS = (
     "automatic_return",
     "water_return",
 )
+COMM_MAIN_MODE_CONFIG_VALUE_KEYS = ("comm_main_mode",)
 
 
 def _new_pivot_config_state():
@@ -563,6 +581,20 @@ def _new_virtual_barrier_config_state():
         "last_response_payload": None,
     }
     for key in VIRTUAL_BARRIER_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _new_comm_main_mode_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in COMM_MAIN_MODE_CONFIG_VALUE_KEYS:
         state[key] = None
     return state
 
@@ -698,7 +730,22 @@ def _normalize_virtual_barrier_config_state(value):
     return normalized
 
 
-SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22", "24", "26")
+def _normalize_comm_main_mode_config_state(value):
+    normalized = _new_comm_main_mode_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["comm_main_mode"] = _normalize_text(value.get("comm_main_mode")) or None
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22", "24", "26", "31")
 
 
 def _config_state_spec(idp):
@@ -717,6 +764,8 @@ def _config_state_spec(idp):
         return ("reboot_config", parse_reboot_config_payload, _normalize_reboot_config_state)
     if normalized == "26":
         return ("virtual_barrier_config", parse_virtual_barrier_config_payload, _normalize_virtual_barrier_config_state)
+    if normalized == "31":
+        return ("comm_main_mode_config", parse_comm_main_mode_config_payload, _normalize_comm_main_mode_config_state)
     return (None, None, None)
 
 
@@ -756,6 +805,13 @@ def _validate_config_payload_bool(value, field_name):
     if parsed is None:
         raise ValueError(f"{field_name} deve ser 0 ou 1")
     return "1" if parsed else "0"
+
+
+def _validate_config_payload_comm_main_mode(value):
+    text = _validate_config_payload_field(value, "comm_main_mode").upper()
+    if text not in ("COMM_MQTT", "COMM_RF"):
+        raise ValueError("comm_main_mode deve ser COMM_MQTT ou COMM_RF")
+    return text
 
 
 def _validate_config_payload_sector_count(value):
@@ -2401,6 +2457,7 @@ class TelemetryStore:
         pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(summary.get("physical_barrier_config"))
         pivot["reboot_config"] = _normalize_reboot_config_state(summary.get("reboot_config"))
         pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(summary.get("virtual_barrier_config"))
+        pivot["comm_main_mode_config"] = _normalize_comm_main_mode_config_state(summary.get("comm_main_mode_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -3107,6 +3164,10 @@ class TelemetryStore:
                 _validate_config_payload_bool(safe_values.get("automatic_return"), "automatic_return"),
                 _validate_config_payload_bool(safe_values.get("water_return"), "water_return"),
             ]
+        elif idp == "31":
+            fields = [
+                _validate_config_payload_comm_main_mode(safe_values.get("comm_main_mode")),
+            ]
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -3406,6 +3467,7 @@ class TelemetryStore:
             "physical_barrier_config": _new_physical_barrier_config_state(),
             "reboot_config": _new_reboot_config_state(),
             "virtual_barrier_config": _new_virtual_barrier_config_state(),
+            "comm_main_mode_config": _new_comm_main_mode_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3513,6 +3575,11 @@ class TelemetryStore:
         baseline_virtual_barrier_config = summary.get("virtual_barrier_config")
         if isinstance(baseline_virtual_barrier_config, dict) and baseline_virtual_barrier_config:
             pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(baseline_virtual_barrier_config)
+            changed = True
+
+        baseline_comm_main_mode_config = summary.get("comm_main_mode_config")
+        if isinstance(baseline_comm_main_mode_config, dict) and baseline_comm_main_mode_config:
+            pivot["comm_main_mode_config"] = _normalize_comm_main_mode_config_state(baseline_comm_main_mode_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -5066,6 +5133,15 @@ class TelemetryStore:
         virtual_barrier_config_summary["pending"] = virtual_last_request_ts is not None and (
             virtual_last_response_ts is None or virtual_last_response_ts < virtual_last_request_ts
         )
+        comm_main_mode_config = _normalize_comm_main_mode_config_state(pivot.get("comm_main_mode_config"))
+        comm_main_mode_config_summary = dict(comm_main_mode_config)
+        comm_main_mode_config_summary["last_request_at"] = _ts_to_str(comm_main_mode_config.get("last_request_ts"))
+        comm_main_mode_config_summary["last_response_at"] = _ts_to_str(comm_main_mode_config.get("last_response_ts"))
+        comm_last_request_ts = _safe_float(comm_main_mode_config.get("last_request_ts"), None)
+        comm_last_response_ts = _safe_float(comm_main_mode_config.get("last_response_ts"), None)
+        comm_main_mode_config_summary["pending"] = comm_last_request_ts is not None and (
+            comm_last_response_ts is None or comm_last_response_ts < comm_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -5171,6 +5247,7 @@ class TelemetryStore:
             "physical_barrier_config": physical_barrier_config_summary,
             "reboot_config": reboot_config_summary,
             "virtual_barrier_config": virtual_barrier_config_summary,
+            "comm_main_mode_config": comm_main_mode_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5440,6 +5517,7 @@ class TelemetryStore:
                     pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(raw_pivot.get("physical_barrier_config"))
                     pivot["reboot_config"] = _normalize_reboot_config_state(raw_pivot.get("reboot_config"))
                     pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(raw_pivot.get("virtual_barrier_config"))
+                    pivot["comm_main_mode_config"] = _normalize_comm_main_mode_config_state(raw_pivot.get("comm_main_mode_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):

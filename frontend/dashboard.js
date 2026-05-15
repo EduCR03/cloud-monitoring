@@ -225,6 +225,10 @@ const ui = HAS_DOM
       rebootConfigHint: document.getElementById("rebootConfigHint"),
       rebootConfigEnabled: document.getElementById("rebootConfigEnabled"),
       rebootConfigTimeout: document.getElementById("rebootConfigTimeout"),
+      requestCommMainModeConfigBtn: document.getElementById("requestCommMainModeConfigBtn"),
+      sendCommMainModeConfigBtn: document.getElementById("sendCommMainModeConfigBtn"),
+      commMainModeConfigHint: document.getElementById("commMainModeConfigHint"),
+      commMainModeConfigMode: document.getElementById("commMainModeConfigMode"),
     }
   : {};
 
@@ -3477,6 +3481,12 @@ function getSelectedVirtualBarrierConfig() {
   return config || {};
 }
 
+function getSelectedCommMainModeConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.comm_main_mode_config === "object" ? summary.comm_main_mode_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3558,6 +3568,11 @@ function wireProtectedEditableInputs() {
       renderSectorConfigFieldsVisibility();
     });
   }
+  if (ui.commMainModeConfigMode) {
+    ui.commMainModeConfigMode.addEventListener("change", () => {
+      ui.commMainModeConfigMode.dataset.userDirty = "1";
+    });
+  }
 }
 
 function getSectorConfigCount() {
@@ -3589,6 +3604,12 @@ function renderSectorConfigFieldsVisibility() {
     const row = Number.parseInt(String(element.getAttribute("data-sector-config-row") || "1"), 10);
     element.hidden = row > count;
   });
+}
+
+function setCommMainModeConfigValue(value) {
+  if (!ui.commMainModeConfigMode || shouldPreserveEditableInput(ui.commMainModeConfigMode)) return;
+  const mode = String(value || "").trim().toUpperCase();
+  ui.commMainModeConfigMode.value = mode === "COMM_RF" ? "COMM_RF" : "COMM_MQTT";
 }
 
 function resolveConfigHintText(config) {
@@ -3644,6 +3665,7 @@ function renderSettingsModalContent() {
   const physicalBarrierConfig = getSelectedPhysicalBarrierConfig();
   const virtualBarrierConfig = getSelectedVirtualBarrierConfig();
   const rebootConfig = getSelectedRebootConfig();
+  const commMainModeConfig = getSelectedCommMainModeConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
   setPivotConfigField(ui.pivotConfigPressure, config.pressure);
@@ -3734,6 +3756,13 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestRebootConfigBtn, "24");
   renderConfigSendButton(ui.sendRebootConfigBtn, "24");
+
+  setCommMainModeConfigValue(commMainModeConfig.comm_main_mode);
+  if (ui.commMainModeConfigHint) {
+    ui.commMainModeConfigHint.textContent = resolveConfigHintText(commMainModeConfig);
+  }
+  renderConfigRequestButton(ui.requestCommMainModeConfigBtn, "31");
+  renderConfigSendButton(ui.sendCommMainModeConfigBtn, "31");
 }
 
 function openSettingsModal() {
@@ -5726,6 +5755,11 @@ function readConfigValues(idp) {
       water_return: readConfigInputValue(ui.virtualBarrierWaterReturn),
     };
   }
+  if (idp === "31") {
+    return {
+      comm_main_mode: readConfigInputValue(ui.commMainModeConfigMode),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5770,6 +5804,8 @@ function markConfigInputsClean(idp) {
               ui.virtualBarrierAutomaticReturn,
               ui.virtualBarrierWaterReturn,
             ]
+        : idp === "31"
+          ? [ui.commMainModeConfigMode]
         : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
 }
@@ -5792,6 +5828,9 @@ function getConfigActionButtons(idp) {
   }
   if (idp === "26") {
     return { request: ui.requestVirtualBarrierConfigBtn, send: ui.sendVirtualBarrierConfigBtn };
+  }
+  if (idp === "31") {
+    return { request: ui.requestCommMainModeConfigBtn, send: ui.sendCommMainModeConfigBtn };
   }
   return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
@@ -6530,6 +6569,12 @@ function wireEvents() {
   }
   if (ui.sendVirtualBarrierConfigBtn) {
     ui.sendVirtualBarrierConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("26"));
+  }
+  if (ui.requestCommMainModeConfigBtn) {
+    ui.requestCommMainModeConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("31"));
+  }
+  if (ui.sendCommMainModeConfigBtn) {
+    ui.sendCommMainModeConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("31"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {
