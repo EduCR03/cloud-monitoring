@@ -271,6 +271,13 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 self.assertIsNone(error)
                 self.assertFalse(parse_rush_config_payload(parsed_disabled)["enabled"])
 
+                parsed_partial, error = parse_device_payload("#04-PivotA_1-0000-0000$")
+                self.assertIsNone(error)
+                partial_config = parse_rush_config_payload(parsed_partial)
+                self.assertEqual(partial_config["start_time_hhmm"], "0000")
+                self.assertEqual(partial_config["end_time_hhmm"], "0000")
+                self.assertIsNone(partial_config["enabled"])
+
                 unsolicited = store.process_message(
                     "cloudv2-config",
                     "#04-PivotA_1-0800-1830-1$",
@@ -287,7 +294,7 @@ class ProbeStatusPayloadTests(unittest.TestCase):
 
                 response = store.process_message(
                     "cloudv2-config",
-                    "#04-PivotA_1-0800-1830-1$",
+                    "#04-PivotA_1-0800-1830$",
                     ts=request["request_ts"] + 1,
                 )
                 self.assertTrue(response["accepted"])
@@ -295,7 +302,7 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 config = snapshot["summary"]["rush_config"]
                 self.assertEqual(config["start_time_hhmm"], "0800")
                 self.assertEqual(config["end_time_hhmm"], "1830")
-                self.assertTrue(config["enabled"])
+                self.assertIsNone(config["enabled"])
                 self.assertFalse(config["pending"])
             finally:
                 store.stop()

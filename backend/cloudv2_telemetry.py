@@ -289,16 +289,16 @@ def parse_pivot_config_payload(parsed):
         return None
 
     parts = parsed.get("parts")
-    if not isinstance(parts, list) or len(parts) < 8:
+    if not isinstance(parts, list) or len(parts) < 2:
         return None
 
     return {
-        "contactor": _normalize_text(parts[2]),
-        "pressure": _normalize_text(parts[3]),
-        "pressurization_time": _safe_int(parts[4], None),
-        "on_time": _safe_int(parts[5], None),
-        "off_time": _safe_int(parts[6], None),
-        "read_time": _safe_int(parts[7], None),
+        "contactor": _normalize_text(parts[2]) if len(parts) > 2 else None,
+        "pressure": _normalize_text(parts[3]) if len(parts) > 3 else None,
+        "pressurization_time": _safe_int(parts[4], None) if len(parts) > 4 else None,
+        "on_time": _safe_int(parts[5], None) if len(parts) > 5 else None,
+        "off_time": _safe_int(parts[6], None) if len(parts) > 6 else None,
+        "read_time": _safe_int(parts[7], None) if len(parts) > 7 else None,
     }
 
 
@@ -311,14 +311,14 @@ def parse_network_config_payload(parsed):
         return None
 
     parts = parsed.get("parts")
-    if not isinstance(parts, list) or len(parts) < 6:
+    if not isinstance(parts, list) or len(parts) < 2:
         return None
 
     return {
-        "gprs_id": _normalize_text(parts[2]),
-        "modem_apn": _normalize_text(parts[3]),
-        "wifi_ssid": _normalize_text(parts[4]),
-        "wifi_pass": _normalize_text(parts[5]),
+        "gprs_id": _normalize_text(parts[2]) if len(parts) > 2 else None,
+        "modem_apn": _normalize_text(parts[3]) if len(parts) > 3 else None,
+        "wifi_ssid": _normalize_text(parts[4]) if len(parts) > 4 else None,
+        "wifi_pass": _normalize_text(parts[5]) if len(parts) > 5 else None,
     }
 
 
@@ -344,13 +344,13 @@ def parse_rush_config_payload(parsed):
         return None
 
     parts = parsed.get("parts")
-    if not isinstance(parts, list) or len(parts) < 5:
+    if not isinstance(parts, list) or len(parts) < 2:
         return None
 
     return {
-        "start_time_hhmm": _normalize_text(parts[2]),
-        "end_time_hhmm": _normalize_text(parts[3]),
-        "enabled": _parse_config_bool(parts[4]),
+        "start_time_hhmm": _normalize_text(parts[2]) if len(parts) > 2 else None,
+        "end_time_hhmm": _normalize_text(parts[3]) if len(parts) > 3 else None,
+        "enabled": _parse_config_bool(parts[4]) if len(parts) > 4 else None,
     }
 
 
