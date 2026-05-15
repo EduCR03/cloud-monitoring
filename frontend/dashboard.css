@@ -2115,6 +2115,7 @@ a:focus {
 
 .sector-config-grid {
   grid-template-columns: minmax(130px, 0.65fr) minmax(0, 2fr);
+  align-items: start;
 }
 
 .sector-angle-grid {
