@@ -2003,65 +2003,80 @@ a:focus {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 22px;
+  padding: 16px 18px;
   border-bottom: 1px solid #e3efe8;
 }
 
 .modal-head h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .icon-close {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .settings-modal {
-  width: min(760px, 100%);
+  width: min(680px, 100%);
 }
 
 .settings-modal-body {
   display: grid;
-  gap: 18px;
-  padding: 20px 22px 22px;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.settings-config-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d9ebe0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfdfb, #f6fbf8);
+  padding: 12px;
 }
 
 .settings-section-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
 .settings-section-head h3 {
-  margin: 0 0 5px;
-  font-size: 18px;
+  margin: 0 0 3px;
+  font-size: 16px;
 }
 
 .settings-section-head p {
   margin: 0;
   color: #49695b;
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.compact-action {
+  min-height: 36px;
+  padding: 8px 12px;
+  white-space: nowrap;
 }
 
 .pivot-config-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .pivot-config-grid label {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .pivot-config-grid span {
   color: #406254;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -2070,11 +2085,11 @@ a:focus {
   width: 100%;
   min-width: 0;
   border: 1px solid #b7d4c1;
-  border-radius: 10px;
+  border-radius: 9px;
   background: #f8fbf9;
-  padding: 11px 12px;
+  padding: 8px 9px;
   color: #102f23;
-  font: inherit;
+  font-size: 14px;
 }
 
 @media (max-width: 640px) {
@@ -2084,7 +2099,7 @@ a:focus {
   }
 
   .pivot-config-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
