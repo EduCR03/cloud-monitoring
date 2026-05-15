@@ -3410,7 +3410,51 @@ function getSelectedNetworkConfig() {
 
 function setPivotConfigField(element, value) {
   if (!element) return;
+  if (shouldPreserveEditableInput(element)) return;
   element.value = value === null || value === undefined || value === "" ? "-" : String(value);
+}
+
+function isEditableInputDirty(element) {
+  return !!(element && element.dataset && element.dataset.userDirty === "1");
+}
+
+function markEditableInputClean(element) {
+  if (element && element.dataset) {
+    element.dataset.userDirty = "0";
+  }
+}
+
+function shouldPreserveEditableInput(element) {
+  if (!element) return false;
+  return document.activeElement === element || isEditableInputDirty(element);
+}
+
+function setEditableInputValue(element, value) {
+  if (!element || shouldPreserveEditableInput(element)) return;
+  element.value = value === null || value === undefined || value === "" ? "" : String(value);
+}
+
+function wireProtectedEditableInputs() {
+  const protectedInputs = [
+    ui.pivotLocationInput,
+    ui.probeInterval,
+    ui.networkConfigGprsId,
+    ui.networkConfigModemApn,
+    ui.networkConfigWifiSsid,
+    ui.networkConfigWifiPass,
+    ui.pivotConfigContactor,
+    ui.pivotConfigPressure,
+    ui.pivotConfigPressurizationTime,
+    ui.pivotConfigOnTime,
+    ui.pivotConfigOffTime,
+    ui.pivotConfigReadTime,
+  ].filter(Boolean);
+
+  protectedInputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      input.dataset.userDirty = "1";
+    });
+  });
 }
 
 function resolveConfigHintText(config) {
@@ -4527,7 +4571,7 @@ function renderPivotView() {
   }
 
   ui.probeEnabled.checked = !!probe.enabled;
-  ui.probeInterval.value = Number(probe.interval_sec || 0);
+  setEditableInputValue(ui.probeInterval, Number(probe.interval_sec || 0));
   const sentCount = Number(probe.sent_count || 0);
   const responseCount = Number(probe.response_count || 0);
   const responseCoverageText =
@@ -4548,7 +4592,7 @@ function renderPivotView() {
   const coordinates = extractPivotCoordinates(pivot);
   const coordinatesText = formatPivotCoordinates(coordinates.latitude, coordinates.longitude);
   if (ui.pivotLocationInput) {
-    ui.pivotLocationInput.value = coordinatesText;
+    setEditableInputValue(ui.pivotLocationInput, coordinatesText);
   }
   if (ui.pivotLocationHint) {
     ui.pivotLocationHint.textContent = coordinatesText ? "" : "Localização não configurada.";
@@ -5325,6 +5369,7 @@ async function savePivotLocationSetting() {
     if (ui.pivotLocationHint) {
       ui.pivotLocationHint.textContent = "Localização atualizada com sucesso.";
     }
+    markEditableInputClean(ui.pivotLocationInput);
     showToast("Localização do pivô salva com sucesso.", "success", 3200);
     await refreshAll();
   } catch (err) {
@@ -5436,6 +5481,13 @@ function readConfigValues(idp) {
   };
 }
 
+function markConfigInputsClean(idp) {
+  const inputs = idp === "02"
+    ? [ui.networkConfigGprsId, ui.networkConfigModemApn, ui.networkConfigWifiSsid, ui.networkConfigWifiPass]
+    : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
+  inputs.forEach(markEditableInputClean);
+}
+
 async function sendSelectedPivotConfig(idp = "03") {
   const normalizedIdp = String(idp || "03").padStart(2, "0");
   const pivotId = String(state.selectedPivot || "").trim();
@@ -5459,6 +5511,7 @@ async function sendSelectedPivotConfig(idp = "03") {
     if (!response.ok || !data.ok) {
       throw new Error(data.error || data.message || `HTTP ${response.status}`);
     }
+    markConfigInputsClean(normalizedIdp);
     showToast("Configuração enviada.", "success", 3200);
   } catch (err) {
     const message = String((err && err.message) || "").trim();
@@ -5959,6 +6012,7 @@ async function saveProbeSetting() {
       throw new Error(data.error || `HTTP ${response.status}`);
     }
     ui.probeHint.textContent = "Configuração de monitoramento de latência salva com sucesso.";
+    markEditableInputClean(ui.probeInterval);
     showToast("Configuração salva.", "success", 3000);
     await refreshAll();
   } catch (err) {
@@ -5970,6 +6024,8 @@ async function saveProbeSetting() {
 }
 
 function wireEvents() {
+  wireProtectedEditableInputs();
+
   ui.searchInput.addEventListener("input", () => {
     state.search = ui.searchInput.value || "";
     state.cardsPage = 1;
