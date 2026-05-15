@@ -295,6 +295,42 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_config_commands_accept_persisted_pivot_not_loaded_in_memory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+                store.write()
+                with store._lock:
+                    store.pivots.pop("PivotA_1", None)
+
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+                request = store.send_config_request("PivotA_1", idp="03")
+                update = store.send_config_update(
+                    "PivotA_1",
+                    idp="02",
+                    values={
+                        "gprs_id": "PivotA_1",
+                        "modem_apn": "virtueyes.com.br",
+                        "wifi_ssid": "Pivo_A",
+                        "wifi_pass": "soiltech",
+                    },
+                )
+
+                self.assertEqual(request["payload"], "#03-PivotA_1$")
+                self.assertEqual(update["payload"], "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$")
+                self.assertEqual(
+                    sent_messages,
+                    [
+                        ("PivotA_1", "#03-PivotA_1$"),
+                        ("PivotA_1", "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$"),
+                    ],
+                )
+            finally:
+                store.stop()
+
     def test_dynamic_pivot_topic_probe_sent_keeps_payload_on_timeline(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)

@@ -1625,6 +1625,29 @@ class TelemetryStore:
         except RuntimeError:
             return False
 
+    def _ensure_known_pivot_for_command_locked(self, pivot_id, ts):
+        pivot = self.pivots.get(pivot_id)
+        if pivot is not None:
+            return pivot
+        if not self._pivot_exists_locked(pivot_id):
+            return None
+
+        try:
+            panel = self.persistence.get_panel_payload(pivot_id)
+        except RuntimeError:
+            panel = None
+        if panel is not None:
+            pivot = self._restore_pivot_from_panel_locked(
+                panel,
+                fallback_run_id=self._active_run_id,
+                now=ts,
+            )
+            if pivot is not None:
+                self.pivots[pivot_id] = pivot
+                return pivot
+
+        return self._get_or_create_pivot_locked(pivot_id, ts)
+
     def _cleanup_expected_pivots_locked(self):
         keep = {}
         changed = False
@@ -2706,19 +2729,19 @@ class TelemetryStore:
         if sender is None:
             raise RuntimeError("envio de configuracao nao configurado")
 
+        command_ts = time.time()
         with self._lock:
-            pivot = self.pivots.get(normalized_pivot)
+            pivot = self._ensure_known_pivot_for_command_locked(normalized_pivot, command_ts)
             if pivot is None:
                 raise ValueError("pivot nao encontrado")
 
         payload = self._build_config_update_payload(normalized_pivot, normalized_idp, values)
-        command_ts = time.time()
         sent_ok = bool(sender(normalized_pivot, payload))
         if not sent_ok:
             raise RuntimeError("falha ao enviar configuracao")
 
         with self._lock:
-            pivot = self.pivots.get(normalized_pivot)
+            pivot = self._ensure_known_pivot_for_command_locked(normalized_pivot, command_ts)
             if pivot is not None:
                 self._record_timeline_locked(
                     pivot,
@@ -2758,19 +2781,19 @@ class TelemetryStore:
         if sender is None:
             raise RuntimeError("envio de configuracao nao configurado")
 
+        request_ts = time.time()
         with self._lock:
-            pivot = self.pivots.get(normalized_pivot)
+            pivot = self._ensure_known_pivot_for_command_locked(normalized_pivot, request_ts)
             if pivot is None:
                 raise ValueError("pivot nao encontrado")
 
         payload = f"#{normalized_idp}-{normalized_pivot}$"
-        request_ts = time.time()
         sent_ok = bool(sender(normalized_pivot, payload))
         if not sent_ok:
             raise RuntimeError("falha ao pedir configuracao")
 
         with self._lock:
-            pivot = self.pivots.get(normalized_pivot)
+            pivot = self._ensure_known_pivot_for_command_locked(normalized_pivot, request_ts)
             if pivot is not None:
                 state_key = "network_config" if normalized_idp == "02" else "pivot_config"
                 normalizer = _normalize_network_config_state if normalized_idp == "02" else _normalize_pivot_config_state
