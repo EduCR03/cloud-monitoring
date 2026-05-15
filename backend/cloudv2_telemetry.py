@@ -422,6 +422,26 @@ def parse_reboot_config_payload(parsed):
     }
 
 
+def parse_virtual_barrier_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("26",):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    return {
+        "start_angle": _safe_int(parts[2], None) if len(parts) > 2 else None,
+        "end_angle": _safe_int(parts[3], None) if len(parts) > 3 else None,
+        "automatic_return": _parse_config_bool(parts[4]) if len(parts) > 4 else None,
+        "water_return": _parse_config_bool(parts[5]) if len(parts) > 5 else None,
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -441,6 +461,12 @@ PHYSICAL_BARRIER_CONFIG_VALUE_KEYS = (
     "time_leaving_barrier",
 )
 REBOOT_CONFIG_VALUE_KEYS = ("enabled", "reboot_timeout_sec")
+VIRTUAL_BARRIER_CONFIG_VALUE_KEYS = (
+    "start_angle",
+    "end_angle",
+    "automatic_return",
+    "water_return",
+)
 
 
 def _new_pivot_config_state():
@@ -523,6 +549,20 @@ def _new_reboot_config_state():
         "last_response_payload": None,
     }
     for key in REBOOT_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _new_virtual_barrier_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in VIRTUAL_BARRIER_CONFIG_VALUE_KEYS:
         state[key] = None
     return state
 
@@ -640,7 +680,25 @@ def _normalize_reboot_config_state(value):
     return normalized
 
 
-SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22", "24")
+def _normalize_virtual_barrier_config_state(value):
+    normalized = _new_virtual_barrier_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["start_angle"] = _safe_int(value.get("start_angle"), None)
+    normalized["end_angle"] = _safe_int(value.get("end_angle"), None)
+    normalized["automatic_return"] = _parse_config_bool(value.get("automatic_return"))
+    normalized["water_return"] = _parse_config_bool(value.get("water_return"))
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22", "24", "26")
 
 
 def _config_state_spec(idp):
@@ -657,6 +715,8 @@ def _config_state_spec(idp):
         return ("physical_barrier_config", parse_physical_barrier_config_payload, _normalize_physical_barrier_config_state)
     if normalized == "24":
         return ("reboot_config", parse_reboot_config_payload, _normalize_reboot_config_state)
+    if normalized == "26":
+        return ("virtual_barrier_config", parse_virtual_barrier_config_payload, _normalize_virtual_barrier_config_state)
     return (None, None, None)
 
 
@@ -2340,6 +2400,7 @@ class TelemetryStore:
         pivot["sector_config"] = _normalize_sector_config_state(summary.get("sector_config"))
         pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(summary.get("physical_barrier_config"))
         pivot["reboot_config"] = _normalize_reboot_config_state(summary.get("reboot_config"))
+        pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(summary.get("virtual_barrier_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -3039,6 +3100,13 @@ class TelemetryStore:
                 _validate_config_payload_bool(safe_values.get("enabled"), "enabled"),
                 str(_validate_config_payload_int(safe_values.get("reboot_timeout_sec"), "reboot_timeout_sec", 0, 4294967295)),
             ]
+        elif idp == "26":
+            fields = [
+                str(_validate_config_payload_int(safe_values.get("start_angle"), "start_angle", 0, 65535)),
+                str(_validate_config_payload_int(safe_values.get("end_angle"), "end_angle", 0, 65535)),
+                _validate_config_payload_bool(safe_values.get("automatic_return"), "automatic_return"),
+                _validate_config_payload_bool(safe_values.get("water_return"), "water_return"),
+            ]
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -3337,6 +3405,7 @@ class TelemetryStore:
             "sector_config": _new_sector_config_state(),
             "physical_barrier_config": _new_physical_barrier_config_state(),
             "reboot_config": _new_reboot_config_state(),
+            "virtual_barrier_config": _new_virtual_barrier_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3439,6 +3508,11 @@ class TelemetryStore:
         baseline_reboot_config = summary.get("reboot_config")
         if isinstance(baseline_reboot_config, dict) and baseline_reboot_config:
             pivot["reboot_config"] = _normalize_reboot_config_state(baseline_reboot_config)
+            changed = True
+
+        baseline_virtual_barrier_config = summary.get("virtual_barrier_config")
+        if isinstance(baseline_virtual_barrier_config, dict) and baseline_virtual_barrier_config:
+            pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(baseline_virtual_barrier_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -4983,6 +5057,15 @@ class TelemetryStore:
         reboot_config_summary["pending"] = reboot_last_request_ts is not None and (
             reboot_last_response_ts is None or reboot_last_response_ts < reboot_last_request_ts
         )
+        virtual_barrier_config = _normalize_virtual_barrier_config_state(pivot.get("virtual_barrier_config"))
+        virtual_barrier_config_summary = dict(virtual_barrier_config)
+        virtual_barrier_config_summary["last_request_at"] = _ts_to_str(virtual_barrier_config.get("last_request_ts"))
+        virtual_barrier_config_summary["last_response_at"] = _ts_to_str(virtual_barrier_config.get("last_response_ts"))
+        virtual_last_request_ts = _safe_float(virtual_barrier_config.get("last_request_ts"), None)
+        virtual_last_response_ts = _safe_float(virtual_barrier_config.get("last_response_ts"), None)
+        virtual_barrier_config_summary["pending"] = virtual_last_request_ts is not None and (
+            virtual_last_response_ts is None or virtual_last_response_ts < virtual_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -5087,6 +5170,7 @@ class TelemetryStore:
             "sector_config": sector_config_summary,
             "physical_barrier_config": physical_barrier_config_summary,
             "reboot_config": reboot_config_summary,
+            "virtual_barrier_config": virtual_barrier_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5355,6 +5439,7 @@ class TelemetryStore:
                     pivot["sector_config"] = _normalize_sector_config_state(raw_pivot.get("sector_config"))
                     pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(raw_pivot.get("physical_barrier_config"))
                     pivot["reboot_config"] = _normalize_reboot_config_state(raw_pivot.get("reboot_config"))
+                    pivot["virtual_barrier_config"] = _normalize_virtual_barrier_config_state(raw_pivot.get("virtual_barrier_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):

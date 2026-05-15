@@ -679,6 +679,37 @@
         <section class="settings-config-card">
           <div class="settings-section-head">
             <div>
+              <h3>Retorno virtual</h3>
+              <p id="virtualBarrierConfigHint">Peça a configuração para preencher os campos.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="requestVirtualBarrierConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendVirtualBarrierConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
+          </div>
+          <div class="pivot-config-grid" aria-label="Campos de configuração do retorno virtual">
+            <label>
+              <span>Ângulo inicial</span>
+              <input id="virtualBarrierStartAngle" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Ângulo final</span>
+              <input id="virtualBarrierEndAngle" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Retorno automático (0/1)</span>
+              <input id="virtualBarrierAutomaticReturn" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Retorno com água (0/1)</span>
+              <input id="virtualBarrierWaterReturn" type="text" inputmode="numeric" value="-"/>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-config-card">
+          <div class="settings-section-head">
+            <div>
               <h3>Reinicialização</h3>
               <p id="rebootConfigHint">Peça a configuração para preencher os campos.</p>
             </div>
@@ -705,6 +736,6 @@
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515o"></script>
+  <script src="dashboard.js?v=20260515p"></script>
 </body>
 </html>

@@ -213,6 +213,13 @@ const ui = HAS_DOM
       physicalBarrierAutomaticReturn: document.getElementById("physicalBarrierAutomaticReturn"),
       physicalBarrierWaterReturn: document.getElementById("physicalBarrierWaterReturn"),
       physicalBarrierLeavingTime: document.getElementById("physicalBarrierLeavingTime"),
+      requestVirtualBarrierConfigBtn: document.getElementById("requestVirtualBarrierConfigBtn"),
+      sendVirtualBarrierConfigBtn: document.getElementById("sendVirtualBarrierConfigBtn"),
+      virtualBarrierConfigHint: document.getElementById("virtualBarrierConfigHint"),
+      virtualBarrierStartAngle: document.getElementById("virtualBarrierStartAngle"),
+      virtualBarrierEndAngle: document.getElementById("virtualBarrierEndAngle"),
+      virtualBarrierAutomaticReturn: document.getElementById("virtualBarrierAutomaticReturn"),
+      virtualBarrierWaterReturn: document.getElementById("virtualBarrierWaterReturn"),
       requestRebootConfigBtn: document.getElementById("requestRebootConfigBtn"),
       sendRebootConfigBtn: document.getElementById("sendRebootConfigBtn"),
       rebootConfigHint: document.getElementById("rebootConfigHint"),
@@ -3464,6 +3471,12 @@ function getSelectedRebootConfig() {
   return config || {};
 }
 
+function getSelectedVirtualBarrierConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.virtual_barrier_config === "object" ? summary.virtual_barrier_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3520,6 +3533,10 @@ function wireProtectedEditableInputs() {
     ui.physicalBarrierAutomaticReturn,
     ui.physicalBarrierWaterReturn,
     ui.physicalBarrierLeavingTime,
+    ui.virtualBarrierStartAngle,
+    ui.virtualBarrierEndAngle,
+    ui.virtualBarrierAutomaticReturn,
+    ui.virtualBarrierWaterReturn,
     ui.rebootConfigEnabled,
     ui.rebootConfigTimeout,
   ].filter(Boolean);
@@ -3625,6 +3642,7 @@ function renderSettingsModalContent() {
   const rushConfig = getSelectedRushConfig();
   const sectorConfig = getSelectedSectorConfig();
   const physicalBarrierConfig = getSelectedPhysicalBarrierConfig();
+  const virtualBarrierConfig = getSelectedVirtualBarrierConfig();
   const rebootConfig = getSelectedRebootConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
@@ -3683,6 +3701,26 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestPhysicalBarrierConfigBtn, "22");
   renderConfigSendButton(ui.sendPhysicalBarrierConfigBtn, "22");
+
+  setPivotConfigField(ui.virtualBarrierStartAngle, virtualBarrierConfig.start_angle);
+  setPivotConfigField(ui.virtualBarrierEndAngle, virtualBarrierConfig.end_angle);
+  setPivotConfigField(
+    ui.virtualBarrierAutomaticReturn,
+    virtualBarrierConfig.automatic_return === null || virtualBarrierConfig.automatic_return === undefined
+      ? null
+      : (virtualBarrierConfig.automatic_return ? "1" : "0")
+  );
+  setPivotConfigField(
+    ui.virtualBarrierWaterReturn,
+    virtualBarrierConfig.water_return === null || virtualBarrierConfig.water_return === undefined
+      ? null
+      : (virtualBarrierConfig.water_return ? "1" : "0")
+  );
+  if (ui.virtualBarrierConfigHint) {
+    ui.virtualBarrierConfigHint.textContent = resolveConfigHintText(virtualBarrierConfig);
+  }
+  renderConfigRequestButton(ui.requestVirtualBarrierConfigBtn, "26");
+  renderConfigSendButton(ui.sendVirtualBarrierConfigBtn, "26");
 
   setPivotConfigField(
     ui.rebootConfigEnabled,
@@ -5680,6 +5718,14 @@ function readConfigValues(idp) {
       reboot_timeout_sec: readConfigInputValue(ui.rebootConfigTimeout),
     };
   }
+  if (idp === "26") {
+    return {
+      start_angle: readConfigInputValue(ui.virtualBarrierStartAngle),
+      end_angle: readConfigInputValue(ui.virtualBarrierEndAngle),
+      automatic_return: readConfigInputValue(ui.virtualBarrierAutomaticReturn),
+      water_return: readConfigInputValue(ui.virtualBarrierWaterReturn),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5717,6 +5763,13 @@ function markConfigInputsClean(idp) {
             ]
         : idp === "24"
           ? [ui.rebootConfigEnabled, ui.rebootConfigTimeout]
+        : idp === "26"
+          ? [
+              ui.virtualBarrierStartAngle,
+              ui.virtualBarrierEndAngle,
+              ui.virtualBarrierAutomaticReturn,
+              ui.virtualBarrierWaterReturn,
+            ]
         : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
 }
@@ -5736,6 +5789,9 @@ function getConfigActionButtons(idp) {
   }
   if (idp === "24") {
     return { request: ui.requestRebootConfigBtn, send: ui.sendRebootConfigBtn };
+  }
+  if (idp === "26") {
+    return { request: ui.requestVirtualBarrierConfigBtn, send: ui.sendVirtualBarrierConfigBtn };
   }
   return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
@@ -6468,6 +6524,12 @@ function wireEvents() {
   }
   if (ui.sendRebootConfigBtn) {
     ui.sendRebootConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("24"));
+  }
+  if (ui.requestVirtualBarrierConfigBtn) {
+    ui.requestVirtualBarrierConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("26"));
+  }
+  if (ui.sendVirtualBarrierConfigBtn) {
+    ui.sendVirtualBarrierConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("26"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {

@@ -15,6 +15,7 @@ from backend.cloudv2_telemetry import (
     parse_reboot_config_payload,
     parse_rush_config_payload,
     parse_sector_config_payload,
+    parse_virtual_barrier_config_payload,
 )
 
 
@@ -447,6 +448,52 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_virtual_barrier_config_response_requires_prior_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                parsed, error = parse_device_payload("#26-PivotA_1-20-160-1-0$")
+                self.assertIsNone(error)
+                parsed_config = parse_virtual_barrier_config_payload(parsed)
+                self.assertEqual(parsed_config["start_angle"], 20)
+                self.assertEqual(parsed_config["end_angle"], 160)
+                self.assertTrue(parsed_config["automatic_return"])
+                self.assertFalse(parsed_config["water_return"])
+
+                unsolicited = store.process_message(
+                    "cloudv2-config",
+                    "#26-PivotA_1-20-160-1-0$",
+                    ts=1_773_171_010.0,
+                )
+                self.assertTrue(unsolicited["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_011.0)
+                self.assertIsNone(snapshot["summary"]["virtual_barrier_config"]["start_angle"])
+
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+                request = store.send_config_request("PivotA_1", idp="26")
+                self.assertEqual(request["payload"], "#26-PivotA_1$")
+                self.assertEqual(sent_messages, [("PivotA_1", "#26-PivotA_1$")])
+
+                response = store.process_message(
+                    "cloudv2-config",
+                    "#26-PivotA_1-20-160-1-0$",
+                    ts=request["request_ts"] + 1,
+                )
+                self.assertTrue(response["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=request["request_ts"] + 2)
+                config = snapshot["summary"]["virtual_barrier_config"]
+                self.assertEqual(config["start_angle"], 20)
+                self.assertEqual(config["end_angle"], 160)
+                self.assertTrue(config["automatic_return"])
+                self.assertFalse(config["water_return"])
+                self.assertFalse(config["pending"])
+            finally:
+                store.stop()
+
     def test_config_update_sends_full_payload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)
@@ -517,6 +564,16 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                         "reboot_timeout_sec": "3600",
                     },
                 )
+                virtual_barrier = store.send_config_update(
+                    "PivotA_1",
+                    idp="26",
+                    values={
+                        "start_angle": "20",
+                        "end_angle": "160",
+                        "automatic_return": "1",
+                        "water_return": "0",
+                    },
+                )
 
                 self.assertEqual(network["payload"], "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$")
                 self.assertEqual(pivot["payload"], "#03-PivotA_1-NA-NA-600-2-5-10$")
@@ -524,6 +581,7 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 self.assertEqual(sector["payload"], "#05-PivotA_1-2-10-90-120-180-0-0-0-0$")
                 self.assertEqual(physical_barrier["payload"], "#22-PivotA_1-10-90-1-0-5$")
                 self.assertEqual(reboot["payload"], "#24-PivotA_1-1-3600$")
+                self.assertEqual(virtual_barrier["payload"], "#26-PivotA_1-20-160-1-0$")
                 self.assertEqual(
                     sent_messages,
                     [
@@ -533,6 +591,7 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                         ("PivotA_1", "#05-PivotA_1-2-10-90-120-180-0-0-0-0$"),
                         ("PivotA_1", "#22-PivotA_1-10-90-1-0-5$"),
                         ("PivotA_1", "#24-PivotA_1-1-3600$"),
+                        ("PivotA_1", "#26-PivotA_1-20-160-1-0$"),
                     ],
                 )
             finally:
