@@ -348,6 +348,25 @@ test("ui: pivot com RSSI exibe o card de RSSI", () => {
   assert.equal(shouldRender, true);
 });
 
+test("ui: grafico RSSI combina historico horario e pontos recentes", () => {
+  const points = _test.collectRssiChartPoints({
+    rssiHistorySeries: [
+      { ts: 1000, rssi: 12 },
+      { ts: 2000, rssi: 13 },
+    ],
+    rssiSeries: [
+      { ts: 2000, rssi: 13 },
+      { ts: 2100, rssi: 14 },
+    ],
+  });
+
+  assert.deepEqual(points, [
+    { ts: 1000, rssi: 12 },
+    { ts: 2000, rssi: 13 },
+    { ts: 2100, rssi: 14 },
+  ]);
+});
+
 test("ui: grafico RSSI usa janela real dos pontos para preencher a largura", () => {
   const domain = _test.resolveRssiChartDomain(
     [

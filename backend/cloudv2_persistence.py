@@ -2565,6 +2565,48 @@ class TelemetryPersistence:
             )
         return points
 
+    def fetch_ping_rssi_points_window(self, pivot_id, session_id, start_ts, end_ts, bucket_sec=3600):
+        normalized_id = str(pivot_id or "").strip()
+        normalized_session = str(session_id or "").strip()
+        if not normalized_id or not normalized_session:
+            return []
+
+        start_value = _safe_float(start_ts, None)
+        end_value = _safe_float(end_ts, None)
+        bucket_value = _safe_float(bucket_sec, 3600)
+        if start_value is None or end_value is None or end_value <= start_value:
+            return []
+        if bucket_value is None or bucket_value <= 0:
+            bucket_value = 3600
+
+        with self._lock:
+            conn = self._require_conn_locked()
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM ping_rssi_points
+                WHERE pivot_id = ? AND session_id = ? AND ts >= ? AND ts <= ?
+                ORDER BY ts ASC, id ASC
+                """,
+                (normalized_id, normalized_session, start_value, end_value),
+            ).fetchall()
+
+        sampled_by_bucket = {}
+        for row in rows:
+            ts_value = _safe_float(row["ts"], None)
+            rssi_value = _safe_int(row["rssi"], None)
+            if ts_value is None or rssi_value is None or rssi_value < 0 or rssi_value > 31:
+                continue
+            bucket_key = int((ts_value - start_value) // bucket_value)
+            sampled_by_bucket[bucket_key] = {
+                "id": int(row["id"]),
+                "ts": ts_value,
+                "at": _ts_to_str(ts_value),
+                "rssi": rssi_value,
+            }
+
+        return [sampled_by_bucket[key] for key in sorted(sampled_by_bucket)]
+
     def summarize_probe_stats_for_pivot(self, pivot_id, window_sec=None, now_ts=None):
         normalized_id = str(pivot_id or "").strip()
         if not normalized_id:
@@ -3164,6 +3206,14 @@ class TelemetryPersistence:
             resolved_session_id,
             limit=self.max_events_per_pivot,
         )
+        now_ts = time.time()
+        rssi_history_series = self.fetch_ping_rssi_points_window(
+            normalized_id,
+            resolved_session_id,
+            start_ts=now_ts - 30 * 24 * 3600,
+            end_ts=now_ts,
+            bucket_sec=3600,
+        )
 
         payload["pivot_id"] = normalized_id
         payload["pivot_slug"] = str(payload.get("pivot_slug") or slugify(normalized_id))
@@ -3172,7 +3222,8 @@ class TelemetryPersistence:
         payload["cloud2_events"] = cloud2_events
         payload["probe_delay_points"] = probe_delay_points
         payload["rssiSeries"] = rssi_series
-        payload["hasRssi"] = bool(rssi_series)
+        payload["rssiHistorySeries"] = rssi_history_series
+        payload["hasRssi"] = bool(rssi_series or rssi_history_series)
         payload["session_id"] = resolved_session_id
         payload["run_id"] = resolved_run_id
         payload["session"] = self._row_to_session_dict_locked(session_row)

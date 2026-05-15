@@ -3374,28 +3374,42 @@ function isValidRssiValue(value) {
   return Number.isFinite(value) && value >= 0 && value <= 31;
 }
 
+function collectRssiChartPoints(pivot) {
+  const seen = new Set();
+  const points = [];
+  const sources = [
+    Array.isArray((pivot || {}).rssiHistorySeries) ? pivot.rssiHistorySeries : [],
+    Array.isArray((pivot || {}).rssiSeries) ? pivot.rssiSeries : [],
+  ];
+
+  for (const source of sources) {
+    for (const item of source) {
+      const ts = Number((item || {}).ts || 0);
+      const rssi = Number((item || {}).rssi);
+      if (!Number.isFinite(ts) || ts <= 0 || !isValidRssiValue(rssi)) continue;
+      const key = `${ts}:${rssi}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      points.push({ ts, rssi });
+    }
+  }
+
+  return points.sort((a, b) => a.ts - b.ts);
+}
+
 function shouldRenderRssiPanel(pivot) {
   if (!pivot || typeof pivot !== "object") return false;
   if (pivot.hasRssi === true) return true;
-  const series = Array.isArray(pivot.rssiSeries) ? pivot.rssiSeries : [];
-  return series.some((point) => {
-    const ts = Number((point || {}).ts || 0);
-    const rssi = Number((point || {}).rssi);
-    return Number.isFinite(ts) && ts > 0 && isValidRssiValue(rssi);
-  });
+  return collectRssiChartPoints(pivot).length > 0;
 }
 
 function normalizeRssiRange(pivot) {
   const nowTs = resolveTimelineReferenceNowTs(pivot);
-  const points = Array.isArray((pivot || {}).rssiSeries) ? pivot.rssiSeries : [];
+  const points = collectRssiChartPoints(pivot);
   let minTs = nowTs;
 
   for (const point of points) {
-    const ts = Number((point || {}).ts || 0);
-    const rssi = Number((point || {}).rssi);
-    if (Number.isFinite(ts) && ts > 0 && ts < minTs && isValidRssiValue(rssi)) {
-      minTs = ts;
-    }
+    if (point.ts < minTs) minTs = point.ts;
   }
 
   if (minTs === nowTs) minTs = Math.max(0, nowTs - 24 * 3600);
@@ -3425,11 +3439,7 @@ function normalizeRssiRange(pivot) {
 }
 
 function buildRssiSeries(pivot, startTs, endTs) {
-  const points = (pivot.rssiSeries || [])
-    .map((point) => ({
-      ts: Number(point.ts || 0),
-      rssi: Number(point.rssi),
-    }))
+  const points = collectRssiChartPoints(pivot)
     .filter(
       (point) =>
         Number.isFinite(point.ts) &&
@@ -5943,6 +5953,7 @@ if (typeof module !== "undefined" && module.exports) {
       setExpectedPivotsPendingState,
       removeExpectedPivotPendingState,
       shouldRenderRssiPanel,
+      collectRssiChartPoints,
       resolveRssiChartDomain,
       getProbeResponseInfoDisplayRows,
       formatProbeConfiguredNetworks,
