@@ -213,6 +213,11 @@ const ui = HAS_DOM
       physicalBarrierAutomaticReturn: document.getElementById("physicalBarrierAutomaticReturn"),
       physicalBarrierWaterReturn: document.getElementById("physicalBarrierWaterReturn"),
       physicalBarrierLeavingTime: document.getElementById("physicalBarrierLeavingTime"),
+      requestRebootConfigBtn: document.getElementById("requestRebootConfigBtn"),
+      sendRebootConfigBtn: document.getElementById("sendRebootConfigBtn"),
+      rebootConfigHint: document.getElementById("rebootConfigHint"),
+      rebootConfigEnabled: document.getElementById("rebootConfigEnabled"),
+      rebootConfigTimeout: document.getElementById("rebootConfigTimeout"),
     }
   : {};
 
@@ -3453,6 +3458,12 @@ function getSelectedPhysicalBarrierConfig() {
   return config || {};
 }
 
+function getSelectedRebootConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.reboot_config === "object" ? summary.reboot_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3509,6 +3520,8 @@ function wireProtectedEditableInputs() {
     ui.physicalBarrierAutomaticReturn,
     ui.physicalBarrierWaterReturn,
     ui.physicalBarrierLeavingTime,
+    ui.rebootConfigEnabled,
+    ui.rebootConfigTimeout,
   ].filter(Boolean);
 
   protectedInputs.forEach((input) => {
@@ -3612,6 +3625,7 @@ function renderSettingsModalContent() {
   const rushConfig = getSelectedRushConfig();
   const sectorConfig = getSelectedSectorConfig();
   const physicalBarrierConfig = getSelectedPhysicalBarrierConfig();
+  const rebootConfig = getSelectedRebootConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
   setPivotConfigField(ui.pivotConfigPressure, config.pressure);
@@ -3669,6 +3683,19 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestPhysicalBarrierConfigBtn, "22");
   renderConfigSendButton(ui.sendPhysicalBarrierConfigBtn, "22");
+
+  setPivotConfigField(
+    ui.rebootConfigEnabled,
+    rebootConfig.enabled === null || rebootConfig.enabled === undefined
+      ? null
+      : (rebootConfig.enabled ? "1" : "0")
+  );
+  setPivotConfigField(ui.rebootConfigTimeout, rebootConfig.reboot_timeout_sec);
+  if (ui.rebootConfigHint) {
+    ui.rebootConfigHint.textContent = resolveConfigHintText(rebootConfig);
+  }
+  renderConfigRequestButton(ui.requestRebootConfigBtn, "24");
+  renderConfigSendButton(ui.sendRebootConfigBtn, "24");
 }
 
 function openSettingsModal() {
@@ -5647,6 +5674,12 @@ function readConfigValues(idp) {
       time_leaving_barrier: readConfigInputValue(ui.physicalBarrierLeavingTime),
     };
   }
+  if (idp === "24") {
+    return {
+      enabled: readConfigInputValue(ui.rebootConfigEnabled),
+      reboot_timeout_sec: readConfigInputValue(ui.rebootConfigTimeout),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5682,6 +5715,8 @@ function markConfigInputsClean(idp) {
               ui.physicalBarrierWaterReturn,
               ui.physicalBarrierLeavingTime,
             ]
+        : idp === "24"
+          ? [ui.rebootConfigEnabled, ui.rebootConfigTimeout]
         : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
 }
@@ -5698,6 +5733,9 @@ function getConfigActionButtons(idp) {
   }
   if (idp === "22") {
     return { request: ui.requestPhysicalBarrierConfigBtn, send: ui.sendPhysicalBarrierConfigBtn };
+  }
+  if (idp === "24") {
+    return { request: ui.requestRebootConfigBtn, send: ui.sendRebootConfigBtn };
   }
   return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
@@ -6424,6 +6462,12 @@ function wireEvents() {
   }
   if (ui.sendPhysicalBarrierConfigBtn) {
     ui.sendPhysicalBarrierConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("22"));
+  }
+  if (ui.requestRebootConfigBtn) {
+    ui.requestRebootConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("24"));
+  }
+  if (ui.sendRebootConfigBtn) {
+    ui.sendRebootConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("24"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {

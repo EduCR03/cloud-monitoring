@@ -404,6 +404,24 @@ def parse_physical_barrier_config_payload(parsed):
     }
 
 
+def parse_reboot_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("24",):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    return {
+        "enabled": _parse_config_bool(parts[2]) if len(parts) > 2 else None,
+        "reboot_timeout_sec": _safe_int(parts[3], None) if len(parts) > 3 else None,
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -422,6 +440,7 @@ PHYSICAL_BARRIER_CONFIG_VALUE_KEYS = (
     "water_return",
     "time_leaving_barrier",
 )
+REBOOT_CONFIG_VALUE_KEYS = ("enabled", "reboot_timeout_sec")
 
 
 def _new_pivot_config_state():
@@ -490,6 +509,20 @@ def _new_physical_barrier_config_state():
         "last_response_payload": None,
     }
     for key in PHYSICAL_BARRIER_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _new_reboot_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in REBOOT_CONFIG_VALUE_KEYS:
         state[key] = None
     return state
 
@@ -591,7 +624,23 @@ def _normalize_physical_barrier_config_state(value):
     return normalized
 
 
-SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22")
+def _normalize_reboot_config_state(value):
+    normalized = _new_reboot_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["enabled"] = _parse_config_bool(value.get("enabled"))
+    normalized["reboot_timeout_sec"] = _safe_int(value.get("reboot_timeout_sec"), None)
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22", "24")
 
 
 def _config_state_spec(idp):
@@ -606,6 +655,8 @@ def _config_state_spec(idp):
         return ("sector_config", parse_sector_config_payload, _normalize_sector_config_state)
     if normalized == "22":
         return ("physical_barrier_config", parse_physical_barrier_config_payload, _normalize_physical_barrier_config_state)
+    if normalized == "24":
+        return ("reboot_config", parse_reboot_config_payload, _normalize_reboot_config_state)
     return (None, None, None)
 
 
@@ -2288,6 +2339,7 @@ class TelemetryStore:
         pivot["rush_config"] = _normalize_rush_config_state(summary.get("rush_config"))
         pivot["sector_config"] = _normalize_sector_config_state(summary.get("sector_config"))
         pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(summary.get("physical_barrier_config"))
+        pivot["reboot_config"] = _normalize_reboot_config_state(summary.get("reboot_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2982,6 +3034,11 @@ class TelemetryStore:
                 _validate_config_payload_bool(safe_values.get("water_return"), "water_return"),
                 str(_validate_config_payload_int(safe_values.get("time_leaving_barrier"), "time_leaving_barrier", 0, 255)),
             ]
+        elif idp == "24":
+            fields = [
+                _validate_config_payload_bool(safe_values.get("enabled"), "enabled"),
+                str(_validate_config_payload_int(safe_values.get("reboot_timeout_sec"), "reboot_timeout_sec", 0, 4294967295)),
+            ]
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -3279,6 +3336,7 @@ class TelemetryStore:
             "rush_config": _new_rush_config_state(),
             "sector_config": _new_sector_config_state(),
             "physical_barrier_config": _new_physical_barrier_config_state(),
+            "reboot_config": _new_reboot_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3376,6 +3434,11 @@ class TelemetryStore:
         baseline_physical_barrier_config = summary.get("physical_barrier_config")
         if isinstance(baseline_physical_barrier_config, dict) and baseline_physical_barrier_config:
             pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(baseline_physical_barrier_config)
+            changed = True
+
+        baseline_reboot_config = summary.get("reboot_config")
+        if isinstance(baseline_reboot_config, dict) and baseline_reboot_config:
+            pivot["reboot_config"] = _normalize_reboot_config_state(baseline_reboot_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -4911,6 +4974,15 @@ class TelemetryStore:
         physical_barrier_config_summary["pending"] = barrier_last_request_ts is not None and (
             barrier_last_response_ts is None or barrier_last_response_ts < barrier_last_request_ts
         )
+        reboot_config = _normalize_reboot_config_state(pivot.get("reboot_config"))
+        reboot_config_summary = dict(reboot_config)
+        reboot_config_summary["last_request_at"] = _ts_to_str(reboot_config.get("last_request_ts"))
+        reboot_config_summary["last_response_at"] = _ts_to_str(reboot_config.get("last_response_ts"))
+        reboot_last_request_ts = _safe_float(reboot_config.get("last_request_ts"), None)
+        reboot_last_response_ts = _safe_float(reboot_config.get("last_response_ts"), None)
+        reboot_config_summary["pending"] = reboot_last_request_ts is not None and (
+            reboot_last_response_ts is None or reboot_last_response_ts < reboot_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -5014,6 +5086,7 @@ class TelemetryStore:
             "rush_config": rush_config_summary,
             "sector_config": sector_config_summary,
             "physical_barrier_config": physical_barrier_config_summary,
+            "reboot_config": reboot_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5281,6 +5354,7 @@ class TelemetryStore:
                     pivot["rush_config"] = _normalize_rush_config_state(raw_pivot.get("rush_config"))
                     pivot["sector_config"] = _normalize_sector_config_state(raw_pivot.get("sector_config"))
                     pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(raw_pivot.get("physical_barrier_config"))
+                    pivot["reboot_config"] = _normalize_reboot_config_state(raw_pivot.get("reboot_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):
