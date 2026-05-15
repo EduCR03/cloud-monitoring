@@ -20,7 +20,18 @@ TOPIC_PING = "cloudv2-ping"
 TOPIC_CLOUD2 = "cloud2"
 TOPIC_NETWORK = "cloudv2-network"
 TOPIC_INFO = "cloudv2-info"
-MONITOR_TOPICS = (TOPIC_CLOUDV2, TOPIC_PING, TOPIC_CLOUD2, TOPIC_NETWORK, TOPIC_INFO)
+TOPIC_SHUTDOWN = "cloudv2-shutdown"
+TOPIC_ERROR = "cloudv2-error"
+EVENT_ONLY_TOPICS = (TOPIC_SHUTDOWN, TOPIC_ERROR)
+MONITOR_TOPICS = (
+    TOPIC_CLOUDV2,
+    TOPIC_PING,
+    TOPIC_CLOUD2,
+    TOPIC_NETWORK,
+    TOPIC_INFO,
+    TOPIC_SHUTDOWN,
+    TOPIC_ERROR,
+)
 PROBE_RESPONSE_TOPICS = {TOPIC_NETWORK, TOPIC_INFO}
 CONNECTIVITY_TOPICS = (TOPIC_CLOUDV2, TOPIC_PING, TOPIC_INFO, TOPIC_NETWORK)
 TIMELINE_MINI_BINS = 96
@@ -862,6 +873,8 @@ class TelemetryStore:
                     self._record_cloud2_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
                 elif topic in PROBE_RESPONSE_TOPICS:
                     self._record_probe_response_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
+                elif topic in EVENT_ONLY_TOPICS:
+                    self._record_generic_topic_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
 
                 self._refresh_status_locked(pivot, ts)
                 self._prune_pivot_locked(pivot, ts)
@@ -2485,6 +2498,16 @@ class TelemetryStore:
                 modem_reset["last_command_topic"] = normalized_pivot
                 modem_reset["last_command_payload"] = payload
                 modem_reset["command_count"] = int(modem_reset.get("command_count") or 0) + 1
+                self._record_timeline_locked(
+                    pivot,
+                    event_type="modem_reset_sent",
+                    topic=normalized_pivot,
+                    ts=command_ts,
+                    summary="Comando de reset #92$ enviado no topico dinamico do pivot.",
+                    details={"payload": payload},
+                    source_topic=normalized_pivot,
+                    raw_payload=payload,
+                )
                 self._persist_pivot_snapshot_locked(pivot, command_ts)
                 self._dirty = True
                 self._invalidate_api_caches_locked()
@@ -3149,6 +3172,24 @@ class TelemetryStore:
             parsed_payload=parsed,
         )
 
+    def _record_generic_topic_locked(self, pivot, parsed, topic, ts, raw_payload=None):
+        normalized_topic = str(topic or "").strip()
+        event_type = re.sub(r"[^a-zA-Z0-9_]+", "_", normalized_topic).strip("_") or "topic_event"
+        self._record_timeline_locked(
+            pivot,
+            event_type=event_type,
+            topic=normalized_topic,
+            ts=ts,
+            summary=f"Mensagem recebida em {normalized_topic}.",
+            details={
+                "idp": parsed.get("idp"),
+                "field_count": len(parsed.get("parts", [])),
+            },
+            source_topic=normalized_topic,
+            raw_payload=raw_payload,
+            parsed_payload=parsed,
+        )
+
     def _record_probe_response_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         probe = pivot["probe"]
         pending_sent_ts = probe.get("pending_sent_ts")
@@ -3309,6 +3350,7 @@ class TelemetryStore:
                 "deadline_at": _ts_to_str(deadline_ts),
             },
             source_topic=pivot["pivot_id"],
+            raw_payload="#11$",
         )
         self.log.info("Probe #11$ enviado: pivot_id=%s", pivot["pivot_id"])
 
@@ -3350,6 +3392,7 @@ class TelemetryStore:
                 "deadline_ts": pending_deadline_ts,
             },
             source_topic=pivot["pivot_id"],
+            raw_payload="#11$",
         )
 
         self.log.warning(

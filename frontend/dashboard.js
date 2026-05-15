@@ -160,6 +160,7 @@ const ui = HAS_DOM
       timelinePrev: document.getElementById("timelinePrev"),
       timelineNext: document.getElementById("timelineNext"),
       timelinePageInfo: document.getElementById("timelinePageInfo"),
+      timelineTopicTabs: document.getElementById("timelineTopicTabs"),
       cloud2Table: document.getElementById("cloud2Table"),
       toastRegion: document.getElementById("toastRegion"),
       sessionHint: document.getElementById("sessionHint"),
@@ -196,6 +197,8 @@ const state = {
   rssiCustomTo: "",
   timelinePage: 1,
   timelinePageSize: 25,
+  timelineTopicFilter: "global",
+  timelinePageByTopic: {},
   refreshMs: 5000,
   devReloadToken: null,
   toastSeq: 0,
@@ -256,6 +259,17 @@ const DASHBOARD_CACHE_STORAGE_MAX_CHARS = 750000;
 const MODEM_RESET_ACK_MIN_FIRMWARE = [2, 8, 4];
 const DASHBOARD_TIMEZONE = "America/Sao_Paulo";
 const DASHBOARD_DATETIME_UTC_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const CONNECTIVITY_EVENT_TOPIC_FILTERS = [
+  { key: "global", label: "Global" },
+  { key: "cloudv2", label: "cloudv2" },
+  { key: "cloudv2-info", label: "cloudv2-info" },
+  { key: "cloudv2-shutdown", label: "cloudv2-shutdown" },
+  { key: "cloudv2-error", label: "cloudv2-error" },
+  { key: "pivot", label: "Pivot_id" },
+];
+const CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS = new Set(
+  CONNECTIVITY_EVENT_TOPIC_FILTERS.map((item) => item.key)
+);
 const GET_JSON_RESPONSE_CACHE = new Map();
 const GET_JSON_INFLIGHT_REQUESTS = new Map();
 const DASHBOARD_DATETIME_FORMATTER = typeof Intl !== "undefined"
@@ -1711,14 +1725,46 @@ function resolveConnectivityEventSourceTopic(event) {
 function resolveConnectivityEventRawPayload(event) {
   const details = (event || {}).details;
   const detailsObj = details && typeof details === "object" ? details : {};
-  const rawPayload = text(detailsObj.raw_payload, "").trim();
-  if (rawPayload) return rawPayload;
+  for (const key of ["raw_payload", "payload", "payload_text", "last_command_payload", "last_ack_payload"]) {
+    const payload = text(detailsObj[key], "").trim();
+    if (payload) return payload;
+  }
   const parsedPayload = detailsObj.parsed_payload;
   if (parsedPayload && typeof parsedPayload === "object") {
     const rawFromParsed = text(parsedPayload.raw, "").trim();
     if (rawFromParsed) return rawFromParsed;
   }
   return "";
+}
+
+function normalizeConnectivityEventTopicFilter(filterKey) {
+  const normalized = text(filterKey, "global").trim();
+  return CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS.has(normalized) ? normalized : "global";
+}
+
+function eventMatchesConnectivityTopicFilter(event, pivot, filterKey) {
+  const key = normalizeConnectivityEventTopicFilter(filterKey);
+  if (key === "global") return true;
+
+  const pivotId = text((pivot || {}).pivot_id, "").trim();
+  const eventTopic = text((event || {}).topic, "").trim();
+  const sourceTopic = resolveConnectivityEventSourceTopic(event);
+
+  if (key === "pivot") {
+    return !!pivotId && (eventTopic === pivotId || sourceTopic === pivotId);
+  }
+  return eventTopic === key || sourceTopic === key;
+}
+
+function getConnectivityEventsPanelFiltered(pivot, filterKey) {
+  const events = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
+  const maxEvents = state.timelinePageSize * 5;
+  const key = normalizeConnectivityEventTopicFilter(filterKey);
+  const filteredEvents = key === "global"
+    ? events
+    : events.filter((event) => eventMatchesConnectivityTopicFilter(event, pivot, key));
+  if (filteredEvents.length <= maxEvents) return filteredEvents;
+  return filteredEvents.slice(0, maxEvents);
 }
 
 function buildConnectivityEventTitle(event) {
@@ -3281,10 +3327,7 @@ function resolveTimelineReferenceNowTs(pivot) {
 }
 
 function getConnectivityEventsPanelCapped(pivot) {
-  const events = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
-  const maxEvents = state.timelinePageSize * 5;
-  if (events.length <= maxEvents) return events;
-  return events.slice(0, maxEvents);
+  return getConnectivityEventsPanelFiltered(pivot, "global");
 }
 
 function normalizeRange(pivot) {
@@ -4186,11 +4229,54 @@ function renderRssiChart(pivot) {
     `Ultima medicao: ${lastPoint.rssi.toFixed(0)} (${formatShortDateTime(lastPoint.ts)})`;
 }
 
+function getTimelinePageForFilter(filterKey) {
+  const key = normalizeConnectivityEventTopicFilter(filterKey);
+  const page = Number((state.timelinePageByTopic || {})[key]);
+  if (Number.isFinite(page) && page >= 1) return Math.floor(page);
+  return key === "global" ? Math.max(1, Math.floor(Number(state.timelinePage) || 1)) : 1;
+}
+
+function setTimelinePageForFilter(filterKey, page) {
+  const key = normalizeConnectivityEventTopicFilter(filterKey);
+  const safePage = Math.max(1, Math.floor(Number(page) || 1));
+  state.timelinePageByTopic = state.timelinePageByTopic || {};
+  state.timelinePageByTopic[key] = safePage;
+  if (key === "global") state.timelinePage = safePage;
+}
+
+function renderTimelineTopicTabs(pivot, activeFilter) {
+  if (!ui.timelineTopicTabs) return;
+  const activeKey = normalizeConnectivityEventTopicFilter(activeFilter);
+  ui.timelineTopicTabs.innerHTML = CONNECTIVITY_EVENT_TOPIC_FILTERS
+    .map((item) => {
+      const count = getConnectivityEventsPanelFiltered(pivot, item.key).length;
+      const isActive = item.key === activeKey;
+      return `
+        <button
+          type="button"
+          class="timeline-topic-tab${isActive ? " active" : ""}"
+          data-topic-filter="${escapeHtml(item.key)}"
+          role="tab"
+          aria-selected="${isActive ? "true" : "false"}"
+        >
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${count}</strong>
+        </button>
+      `;
+    })
+    .join("");
+}
+
 function renderTimeline(pivot) {
-  const allEvents = getConnectivityEventsPanelCapped(pivot);
+  const activeFilter = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
+  state.timelineTopicFilter = activeFilter;
+  renderTimelineTopicTabs(pivot, activeFilter);
+
+  const allEvents = getConnectivityEventsPanelFiltered(pivot, activeFilter);
   const totalPages = Math.max(1, Math.ceil(allEvents.length / state.timelinePageSize));
-  if (state.timelinePage > totalPages) state.timelinePage = totalPages;
-  const start = (state.timelinePage - 1) * state.timelinePageSize;
+  const activePage = Math.min(getTimelinePageForFilter(activeFilter), totalPages);
+  setTimelinePageForFilter(activeFilter, activePage);
+  const start = (activePage - 1) * state.timelinePageSize;
   const pageEvents = allEvents.slice(start, start + state.timelinePageSize);
 
   if (!pageEvents.length) {
@@ -4222,9 +4308,9 @@ function renderTimeline(pivot) {
       .join("");
   }
 
-  ui.timelinePageInfo.textContent = `Página ${state.timelinePage}/${totalPages}`;
-  ui.timelinePrev.disabled = state.timelinePage <= 1;
-  ui.timelineNext.disabled = state.timelinePage >= totalPages;
+  ui.timelinePageInfo.textContent = `Página ${activePage}/${totalPages}`;
+  ui.timelinePrev.disabled = activePage <= 1;
+  ui.timelineNext.disabled = activePage >= totalPages;
 }
 
 function renderCloud2Table(pivot) {
@@ -4777,6 +4863,8 @@ async function openPivot(pivotId) {
   state.selectedPivot = id;
   state.panelSessionMeta = null;
   state.timelinePage = 1;
+  state.timelineTopicFilter = "global";
+  state.timelinePageByTopic = {};
   setHashPivot(id);
   await refreshPivot();
   ui.pivotView.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -5894,17 +5982,29 @@ function wireEvents() {
   });
 
   ui.timelinePrev.addEventListener("click", () => {
-    state.timelinePage = Math.max(1, state.timelinePage - 1);
+    const filterKey = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
+    setTimelinePageForFilter(filterKey, getTimelinePageForFilter(filterKey) - 1);
     renderPivotView();
   });
   ui.timelineNext.addEventListener("click", () => {
+    const filterKey = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
     const total = Math.max(
       1,
-      Math.ceil(getConnectivityEventsPanelCapped(state.pivotData || {}).length / state.timelinePageSize)
+      Math.ceil(getConnectivityEventsPanelFiltered(state.pivotData || {}, filterKey).length / state.timelinePageSize)
     );
-    state.timelinePage = Math.min(total, state.timelinePage + 1);
+    setTimelinePageForFilter(filterKey, Math.min(total, getTimelinePageForFilter(filterKey) + 1));
     renderPivotView();
   });
+  if (ui.timelineTopicTabs) {
+    ui.timelineTopicTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-topic-filter]");
+      if (!button) return;
+      const filterKey = normalizeConnectivityEventTopicFilter(button.dataset.topicFilter);
+      state.timelineTopicFilter = filterKey;
+      setTimelinePageForFilter(filterKey, 1);
+      renderPivotView();
+    });
+  }
 
   window.addEventListener("hashchange", () => {
     const hashPivot = parseHashPivot();
@@ -6015,6 +6115,8 @@ if (typeof module !== "undefined" && module.exports) {
       buildConnectivityQualityInput,
       buildConnectivityStatus,
       computeConnectivityFromRange,
+      getConnectivityEventsPanelFiltered,
+      resolveConnectivityEventRawPayload,
       normalizePivotIdList,
       parsePivotIdBatchInput,
       getPivotFirmwareVersionForReset,

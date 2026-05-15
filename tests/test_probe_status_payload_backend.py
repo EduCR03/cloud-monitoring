@@ -91,6 +91,66 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_event_only_topics_are_recorded_without_affecting_probe_logic(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                shutdown = store.process_message(
+                    "cloudv2-shutdown",
+                    "#90-PivotA_1-shutdown_reason$",
+                    ts=1_773_171_010.0,
+                )
+                error = store.process_message(
+                    "cloudv2-error",
+                    "#91-PivotA_1-error_reason$",
+                    ts=1_773_171_011.0,
+                )
+
+                self.assertTrue(shutdown["accepted"])
+                self.assertTrue(error["accepted"])
+
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_020.0)
+                events = snapshot["timeline"]
+                self.assertTrue(
+                    any(
+                        item.get("topic") == "cloudv2-shutdown"
+                        and item.get("details", {}).get("raw_payload") == "#90-PivotA_1-shutdown_reason$"
+                        for item in events
+                    )
+                )
+                self.assertTrue(
+                    any(
+                        item.get("topic") == "cloudv2-error"
+                        and item.get("details", {}).get("raw_payload") == "#91-PivotA_1-error_reason$"
+                        for item in events
+                    )
+                )
+            finally:
+                store.stop()
+
+    def test_dynamic_pivot_topic_probe_sent_keeps_payload_on_timeline(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+                store.update_probe_setting("PivotA_1", enabled=True, interval_sec=900)
+                store.set_probe_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+
+                store.tick(now=1_773_171_010.0)
+
+                self.assertEqual(sent_messages, [("PivotA_1", "#11$")])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_020.0)
+                probe_sent = next(item for item in snapshot["timeline"] if item.get("type") == "probe_sent")
+                self.assertEqual(probe_sent["topic"], "PivotA_1")
+                self.assertEqual(probe_sent["details"]["raw_payload"], "#11$")
+            finally:
+                store.stop()
+
     def test_restart_prefers_db_probe_settings_over_stale_runtime_store(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             pivot_id = "Savana_16"

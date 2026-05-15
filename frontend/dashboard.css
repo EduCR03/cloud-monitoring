@@ -1846,6 +1846,47 @@ a:focus {
   gap: 8px;
 }
 
+.timeline-topic-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.timeline-topic-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #bfd9ca;
+  border-radius: 999px;
+  background: #f8fcfa;
+  color: #143d2c;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.timeline-topic-tab strong {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e8f3ed;
+  color: #1a6340;
+  text-align: center;
+}
+
+.timeline-topic-tab.active {
+  border-color: #1c6a43;
+  background: #1c6a43;
+  color: #fff;
+}
+
+.timeline-topic-tab.active strong {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
 .event {
   border-left: 4px solid #b8cfc1;
   border-radius: 8px;
@@ -1867,9 +1908,18 @@ a:focus {
   border-left-color: #3a6997;
 }
 
+.event.cloudv2_shutdown {
+  border-left-color: #a63b3b;
+}
+
+.event.cloudv2_error {
+  border-left-color: #d86814;
+}
+
 .event.probe_sent,
 .event.probe_response,
 .event.probe_timeout,
+.event.modem_reset_sent,
 .event.probe_response_unmatched {
   border-left-color: #8c6f2d;
 }

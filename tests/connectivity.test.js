@@ -516,6 +516,43 @@ test("ui: painel de eventos mantém apenas os 125 eventos mais recentes", () => 
   assert.equal(events.at(-1).ts, 1_876);
 });
 
+test("ui: painel de eventos separa limite por topico e mantem global", () => {
+  const timeline = [
+    ...Array.from({ length: 140 }, (_, index) => ({
+      ts: 3_000 - index,
+      topic: "cloudv2",
+      details: { source_topic: "cloudv2" },
+    })),
+    ...Array.from({ length: 140 }, (_, index) => ({
+      ts: 2_000 - index,
+      topic: "cloudv2-info",
+      details: { source_topic: "cloudv2-info" },
+    })),
+    ...Array.from({ length: 20 }, (_, index) => ({
+      ts: 1_000 - index,
+      topic: "PivotA_1",
+      details: { source_topic: "PivotA_1", payload: "#11$" },
+    })),
+  ];
+
+  const pivot = { pivot_id: "PivotA_1", timeline };
+
+  assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "global").length, 125);
+  assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "cloudv2").length, 125);
+  assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "cloudv2-info").length, 125);
+  assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "pivot").length, 20);
+});
+
+test("ui: payload do topico dinamico usa details.payload como fallback", () => {
+  assert.equal(
+    _test.resolveConnectivityEventRawPayload({
+      topic: "PivotA_1",
+      details: { source_topic: "PivotA_1", payload: "#11$" },
+    }),
+    "#11$"
+  );
+});
+
 test("ui: firmware para reset usa summary do painel e fallback da tabela", () => {
   assert.equal(
     _test.getPivotFirmwareVersionForReset({ summary: { last_cloud2: { firmware: "2.8.5" } } }),
