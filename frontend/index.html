@@ -492,24 +492,27 @@
               <h3>Rede</h3>
               <p id="networkConfigHint">Peça a configuração para preencher os campos.</p>
             </div>
-            <button id="requestNetworkConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+            <div class="settings-action-row">
+              <button id="requestNetworkConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendNetworkConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
           </div>
           <div class="pivot-config-grid" aria-label="Campos de configuração de rede">
             <label>
               <span>GPRS ID</span>
-              <input id="networkConfigGprsId" type="text" readonly value="-"/>
+              <input id="networkConfigGprsId" type="text" value="-"/>
             </label>
             <label>
               <span>APN modem</span>
-              <input id="networkConfigModemApn" type="text" readonly value="-"/>
+              <input id="networkConfigModemApn" type="text" value="-"/>
             </label>
             <label>
               <span>Wi-Fi SSID</span>
-              <input id="networkConfigWifiSsid" type="text" readonly value="-"/>
+              <input id="networkConfigWifiSsid" type="text" value="-"/>
             </label>
             <label>
               <span>Wi-Fi senha</span>
-              <input id="networkConfigWifiPass" type="text" readonly value="-"/>
+              <input id="networkConfigWifiPass" type="text" value="-"/>
             </label>
           </div>
         </section>
@@ -520,32 +523,35 @@
               <h3>Pivô</h3>
               <p id="pivotConfigHint">Peça a configuração para preencher os campos.</p>
             </div>
-            <button id="requestPivotConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+            <div class="settings-action-row">
+              <button id="requestPivotConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendPivotConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
           </div>
           <div class="pivot-config-grid" aria-label="Campos de configuração do pivô">
             <label>
               <span>Contator</span>
-              <input id="pivotConfigContactor" type="text" readonly value="-"/>
+              <input id="pivotConfigContactor" type="text" value="-"/>
             </label>
             <label>
               <span>Pressão</span>
-              <input id="pivotConfigPressure" type="text" readonly value="-"/>
+              <input id="pivotConfigPressure" type="text" value="-"/>
             </label>
             <label>
               <span>Pressurização</span>
-              <input id="pivotConfigPressurizationTime" type="text" readonly value="-"/>
+              <input id="pivotConfigPressurizationTime" type="text" inputmode="numeric" value="-"/>
             </label>
             <label>
               <span>Tempo de Liga</span>
-              <input id="pivotConfigOnTime" type="text" readonly value="-"/>
+              <input id="pivotConfigOnTime" type="text" inputmode="numeric" value="-"/>
             </label>
             <label>
               <span>Tempo de Desliga</span>
-              <input id="pivotConfigOffTime" type="text" readonly value="-"/>
+              <input id="pivotConfigOffTime" type="text" inputmode="numeric" value="-"/>
             </label>
             <label>
               <span>Tempo da Leitura</span>
-              <input id="pivotConfigReadTime" type="text" readonly value="-"/>
+              <input id="pivotConfigReadTime" type="text" inputmode="numeric" value="-"/>
             </label>
           </div>
         </section>
@@ -555,7 +561,7 @@
 
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
-  <script src="runtime-config.js?v=20260515g"></script>
-  <script src="dashboard.js?v=20260515g"></script>
+  <script src="runtime-config.js?v=20260515h"></script>
+  <script src="dashboard.js?v=20260515h"></script>
 </body>
 </html>

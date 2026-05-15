@@ -251,6 +251,50 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_config_update_sends_full_payload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+
+                network = store.send_config_update(
+                    "PivotA_1",
+                    idp="02",
+                    values={
+                        "gprs_id": "PivotA_1",
+                        "modem_apn": "virtueyes.com.br",
+                        "wifi_ssid": "Pivo_A",
+                        "wifi_pass": "soiltech",
+                    },
+                )
+                pivot = store.send_config_update(
+                    "PivotA_1",
+                    idp="03",
+                    values={
+                        "contactor": "NA",
+                        "pressure": "NA",
+                        "pressurization_time": "600",
+                        "on_time": "2",
+                        "off_time": "5",
+                        "read_time": "10",
+                    },
+                )
+
+                self.assertEqual(network["payload"], "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$")
+                self.assertEqual(pivot["payload"], "#03-PivotA_1-NA-NA-600-2-5-10$")
+                self.assertEqual(
+                    sent_messages,
+                    [
+                        ("PivotA_1", "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$"),
+                        ("PivotA_1", "#03-PivotA_1-NA-NA-600-2-5-10$"),
+                    ],
+                )
+            finally:
+                store.stop()
+
     def test_dynamic_pivot_topic_probe_sent_keeps_payload_on_timeline(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)

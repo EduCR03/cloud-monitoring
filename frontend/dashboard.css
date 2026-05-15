@@ -2057,6 +2057,14 @@ a:focus {
   font-size: 12px;
 }
 
+.settings-action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .compact-action {
   min-height: 36px;
   padding: 8px 12px;
@@ -2096,6 +2104,10 @@ a:focus {
   .settings-section-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .settings-action-row {
+    justify-content: flex-start;
   }
 
   .pivot-config-grid {

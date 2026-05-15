@@ -395,6 +395,25 @@ def _normalize_network_config_state(value):
     return normalized
 
 
+def _validate_config_payload_field(value, field_name):
+    text = _normalize_text(value)
+    if not text or text == "-":
+        raise ValueError(f"{field_name} obrigatorio")
+    if any(char in text for char in ("#", "$", "\r", "\n")):
+        raise ValueError(f"{field_name} contem caractere invalido")
+    return text
+
+
+def _validate_config_payload_int(value, field_name, min_value=0, max_value=255):
+    text = _validate_config_payload_field(value, field_name)
+    parsed = _safe_int(text, None)
+    if parsed is None or str(parsed) != text:
+        raise ValueError(f"{field_name} deve ser numerico")
+    if parsed < min_value or parsed > max_value:
+        raise ValueError(f"{field_name} fora do limite")
+    return parsed
+
+
 def _parse_version_triplet(value):
     raw = _normalize_text(value).lower()
     if not raw:
@@ -2650,6 +2669,80 @@ class TelemetryStore:
 
     def send_pivot_config_request(self, pivot_id):
         return self.send_config_request(pivot_id, idp="03")
+
+    def _build_config_update_payload(self, pivot_id, idp, values):
+        safe_values = values if isinstance(values, dict) else {}
+        if idp == "02":
+            fields = [
+                _validate_config_payload_field(safe_values.get("gprs_id"), "gprs_id"),
+                _validate_config_payload_field(safe_values.get("modem_apn"), "modem_apn"),
+                _validate_config_payload_field(safe_values.get("wifi_ssid"), "wifi_ssid"),
+                _validate_config_payload_field(safe_values.get("wifi_pass"), "wifi_pass"),
+            ]
+        elif idp == "03":
+            fields = [
+                _validate_config_payload_field(safe_values.get("contactor"), "contactor"),
+                _validate_config_payload_field(safe_values.get("pressure"), "pressure"),
+                str(_validate_config_payload_int(safe_values.get("pressurization_time"), "pressurization_time", 0, 65535)),
+                str(_validate_config_payload_int(safe_values.get("on_time"), "on_time", 0, 255)),
+                str(_validate_config_payload_int(safe_values.get("off_time"), "off_time", 0, 255)),
+                str(_validate_config_payload_int(safe_values.get("read_time"), "read_time", 0, 255)),
+            ]
+        else:
+            raise ValueError("idp de configuracao nao suportado")
+        return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
+
+    def send_config_update(self, pivot_id, idp="03", values=None):
+        normalized_pivot = str(pivot_id or "").strip()
+        if not normalized_pivot:
+            raise ValueError("pivot_id obrigatorio")
+        if not validate_pivot_id(normalized_pivot):
+            raise ValueError("pivot_id invalido")
+        normalized_idp = str(idp or "").strip().zfill(2)
+        if normalized_idp not in ("02", "03"):
+            raise ValueError("idp de configuracao nao suportado")
+
+        sender = self._pivot_config_sender
+        if sender is None:
+            raise RuntimeError("envio de configuracao nao configurado")
+
+        with self._lock:
+            pivot = self.pivots.get(normalized_pivot)
+            if pivot is None:
+                raise ValueError("pivot nao encontrado")
+
+        payload = self._build_config_update_payload(normalized_pivot, normalized_idp, values)
+        command_ts = time.time()
+        sent_ok = bool(sender(normalized_pivot, payload))
+        if not sent_ok:
+            raise RuntimeError("falha ao enviar configuracao")
+
+        with self._lock:
+            pivot = self.pivots.get(normalized_pivot)
+            if pivot is not None:
+                self._record_timeline_locked(
+                    pivot,
+                    event_type="config_update_sent",
+                    topic=normalized_pivot,
+                    ts=command_ts,
+                    summary=f"Configuracao IDP {normalized_idp} enviada para salvar.",
+                    details={"payload": payload, "idp": normalized_idp},
+                    source_topic=normalized_pivot,
+                    raw_payload=payload,
+                )
+                self._persist_pivot_snapshot_locked(pivot, command_ts)
+                self._dirty = True
+                self._invalidate_api_caches_locked()
+
+        self.log.info("Configuracao IDP %s enviada para pivot_id=%s", normalized_idp, normalized_pivot)
+        return {
+            "pivot_id": normalized_pivot,
+            "topic": normalized_pivot,
+            "payload": payload,
+            "idp": normalized_idp,
+            "command_ts": command_ts,
+            "command_at": _ts_to_str(command_ts),
+        }
 
     def send_config_request(self, pivot_id, idp="03"):
         normalized_pivot = str(pivot_id or "").strip()

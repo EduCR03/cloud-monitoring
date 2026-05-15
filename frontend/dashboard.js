@@ -171,12 +171,14 @@ const ui = HAS_DOM
       settingsModal: document.getElementById("settingsModal"),
       settingsModalClose: document.getElementById("settingsModalClose"),
       requestNetworkConfigBtn: document.getElementById("requestNetworkConfigBtn"),
+      sendNetworkConfigBtn: document.getElementById("sendNetworkConfigBtn"),
       networkConfigHint: document.getElementById("networkConfigHint"),
       networkConfigGprsId: document.getElementById("networkConfigGprsId"),
       networkConfigModemApn: document.getElementById("networkConfigModemApn"),
       networkConfigWifiSsid: document.getElementById("networkConfigWifiSsid"),
       networkConfigWifiPass: document.getElementById("networkConfigWifiPass"),
       requestPivotConfigBtn: document.getElementById("requestPivotConfigBtn"),
+      sendPivotConfigBtn: document.getElementById("sendPivotConfigBtn"),
       pivotConfigHint: document.getElementById("pivotConfigHint"),
       pivotConfigContactor: document.getElementById("pivotConfigContactor"),
       pivotConfigPressure: document.getElementById("pivotConfigPressure"),
@@ -268,6 +270,7 @@ const state = {
   pendingModemResetAcks: {},
   bulkPivotActionInFlight: false,
   configRequestInFlightByIdp: {},
+  configSendInFlightByIdp: {},
 };
 
 const API_REQUEST_TIMEOUT_MS = 20000;
@@ -3435,6 +3438,14 @@ function renderConfigRequestButton(button, idp) {
   button.textContent = inFlight ? "Pedindo..." : "Pedir configuração";
 }
 
+function renderConfigSendButton(button, idp) {
+  if (!button) return;
+  const pivotId = String(state.selectedPivot || "").trim();
+  const inFlight = !!state.configSendInFlightByIdp[idp];
+  button.disabled = !pivotId || inFlight;
+  button.textContent = inFlight ? "Enviando..." : "Configurar";
+}
+
 function renderNetworkConfigModal() {
   const config = getSelectedNetworkConfig();
   setPivotConfigField(ui.networkConfigGprsId, config.gprs_id);
@@ -3445,6 +3456,7 @@ function renderNetworkConfigModal() {
     ui.networkConfigHint.textContent = resolveConfigHintText(config);
   }
   renderConfigRequestButton(ui.requestNetworkConfigBtn, "02");
+  renderConfigSendButton(ui.sendNetworkConfigBtn, "02");
 }
 
 function renderSettingsModalContent() {
@@ -3461,6 +3473,7 @@ function renderSettingsModalContent() {
     ui.pivotConfigHint.textContent = resolveConfigHintText(config);
   }
   renderConfigRequestButton(ui.requestPivotConfigBtn, "03");
+  renderConfigSendButton(ui.sendPivotConfigBtn, "03");
 }
 
 function openSettingsModal() {
@@ -5399,6 +5412,63 @@ async function requestSelectedPivotConfig(idp = "03") {
   }
 }
 
+function readConfigInputValue(element) {
+  const value = String((element && element.value) || "").trim();
+  return value === "-" ? "" : value;
+}
+
+function readConfigValues(idp) {
+  if (idp === "02") {
+    return {
+      gprs_id: readConfigInputValue(ui.networkConfigGprsId),
+      modem_apn: readConfigInputValue(ui.networkConfigModemApn),
+      wifi_ssid: readConfigInputValue(ui.networkConfigWifiSsid),
+      wifi_pass: readConfigInputValue(ui.networkConfigWifiPass),
+    };
+  }
+  return {
+    contactor: readConfigInputValue(ui.pivotConfigContactor),
+    pressure: readConfigInputValue(ui.pivotConfigPressure),
+    pressurization_time: readConfigInputValue(ui.pivotConfigPressurizationTime),
+    on_time: readConfigInputValue(ui.pivotConfigOnTime),
+    off_time: readConfigInputValue(ui.pivotConfigOffTime),
+    read_time: readConfigInputValue(ui.pivotConfigReadTime),
+  };
+}
+
+async function sendSelectedPivotConfig(idp = "03") {
+  const normalizedIdp = String(idp || "03").padStart(2, "0");
+  const pivotId = String(state.selectedPivot || "").trim();
+  if (!pivotId || state.configSendInFlightByIdp[normalizedIdp]) return;
+
+  state.configSendInFlightByIdp[normalizedIdp] = true;
+  renderSettingsModalContent();
+  try {
+    const response = await fetch(buildApiUrl("/api/pivot-config-send"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        pivot_id: pivotId,
+        idp: normalizedIdp,
+        values: readConfigValues(normalizedIdp),
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || data.message || `HTTP ${response.status}`);
+    }
+    showToast("Configuração enviada.", "success", 3200);
+  } catch (err) {
+    const message = String((err && err.message) || "").trim();
+    showToast(message || "Não foi possível enviar a configuração.", "error", 4200);
+  } finally {
+    state.configSendInFlightByIdp[normalizedIdp] = false;
+    renderConfigRequestButton(normalizedIdp === "02" ? ui.requestNetworkConfigBtn : ui.requestPivotConfigBtn, normalizedIdp);
+    renderConfigSendButton(normalizedIdp === "02" ? ui.sendNetworkConfigBtn : ui.sendPivotConfigBtn, normalizedIdp);
+  }
+}
+
 async function deleteSelectedPivot() {
   if (!canCurrentUserDeletePivots()) {
     syncPivotDeleteControl();
@@ -6056,8 +6126,14 @@ function wireEvents() {
   if (ui.requestNetworkConfigBtn) {
     ui.requestNetworkConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("02"));
   }
+  if (ui.sendNetworkConfigBtn) {
+    ui.sendNetworkConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("02"));
+  }
   if (ui.requestPivotConfigBtn) {
     ui.requestPivotConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("03"));
+  }
+  if (ui.sendPivotConfigBtn) {
+    ui.sendPivotConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("03"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {
