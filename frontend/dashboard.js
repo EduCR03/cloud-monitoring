@@ -100,6 +100,7 @@ const ui = HAS_DOM
       pivotQuality: document.getElementById("pivotQuality"),
       deletePivotBtn: document.getElementById("deletePivotBtn"),
       pivotSettingsBtn: document.getElementById("pivotSettingsBtn"),
+      pivotShutdownsBtn: document.getElementById("pivotShutdownsBtn"),
       pivotAdminTech: document.getElementById("pivotAdminTech"),
       pivotTechControls: document.getElementById("pivotTechControls"),
       pivotConcentratorToggle: document.getElementById("pivotConcentratorToggle"),
@@ -170,6 +171,10 @@ const ui = HAS_DOM
       initialLoadingText: document.getElementById("initialLoadingText"),
       settingsModal: document.getElementById("settingsModal"),
       settingsModalClose: document.getElementById("settingsModalClose"),
+      shutdownsModal: document.getElementById("shutdownsModal"),
+      shutdownsModalClose: document.getElementById("shutdownsModalClose"),
+      shutdownsModalTitle: document.getElementById("shutdownsModalTitle"),
+      shutdownsModalBody: document.getElementById("shutdownsModalBody"),
       requestNetworkConfigBtn: document.getElementById("requestNetworkConfigBtn"),
       sendNetworkConfigBtn: document.getElementById("sendNetworkConfigBtn"),
       networkConfigHint: document.getElementById("networkConfigHint"),
@@ -3778,6 +3783,131 @@ function closeSettingsModal() {
   ui.pivotSettingsBtn?.focus();
 }
 
+function getSelectedShutdownHistory() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const history = Array.isArray(summary.shutdown_history) ? summary.shutdown_history : [];
+  return history.filter((item) => item && typeof item === "object");
+}
+
+function formatShutdownValue(value) {
+  const normalized = text(value, "").trim();
+  return normalized || "-";
+}
+
+function formatShutdownBarrier(event) {
+  const label = formatShutdownValue(event.physical_barrier_label);
+  if (label !== "-") return label;
+  if (event.physical_barrier === true) return "Sim, perto da barreira";
+  if (event.physical_barrier === false) return "Não";
+  return "-";
+}
+
+function buildShutdownEventFields(event) {
+  return [
+    {
+      label: "Recebido pelo backend",
+      value: formatTimestampFromTsOrValue(event.ts, event.at, true),
+      meaning: "Horário em que o cloud-monitoring registrou o pacote.",
+    },
+    {
+      label: "Data do desliga",
+      value: formatShutdownValue(event.board_datetime),
+      meaning: "Data e hora enviada pela placa no momento do desligamento.",
+    },
+    {
+      label: "Origem do comando",
+      value: formatShutdownValue(event.command_origin),
+      meaning: formatShutdownValue(event.command_origin_label),
+    },
+    {
+      label: "IDP que desligou",
+      value: formatShutdownValue(event.shutdown_idp),
+      meaning: formatShutdownValue(event.shutdown_idp_label),
+    },
+    {
+      label: "ID agendamento",
+      value: formatShutdownValue(event.schedule_id),
+      meaning: formatShutdownValue(event.schedule_id) === "0" ? "Desliga não agendado." : "Agendamento responsável pelo desliga.",
+    },
+    {
+      label: "Motivo",
+      value: formatShutdownValue(event.shutdown_reason),
+      meaning: "Motivo ou agente que executou o desligamento.",
+    },
+    {
+      label: "Barreira física",
+      value: formatShutdownBarrier(event),
+      meaning: "Indica se estava perto da barreira física.",
+    },
+    {
+      label: "Posição",
+      value: formatShutdownValue(event.position),
+      meaning: "Posição do pivô no momento do desligamento.",
+    },
+  ];
+}
+
+function renderShutdownsModalContent() {
+  if (!ui.shutdownsModalBody) return;
+  const pivotId = text(state.selectedPivot || (state.pivotData || {}).pivot_id, "Pivô");
+  if (ui.shutdownsModalTitle) {
+    ui.shutdownsModalTitle.textContent = `Últimos desligas - ${pivotId}`;
+  }
+
+  const history = getSelectedShutdownHistory();
+  if (!history.length) {
+    ui.shutdownsModalBody.innerHTML = `
+      <div class="shutdown-empty">
+        Nenhum desliga registrado no último mês para este pivô.
+      </div>
+    `;
+    return;
+  }
+
+  ui.shutdownsModalBody.innerHTML = history
+    .map((event) => {
+      const fields = buildShutdownEventFields(event)
+        .map((field) => `
+          <div class="shutdown-field">
+            <span>${escapeHtml(field.label)}</span>
+            <strong>${escapeHtml(field.value)}</strong>
+            <small>${escapeHtml(field.meaning)}</small>
+          </div>
+        `)
+        .join("");
+      return `
+        <article class="shutdown-card">
+          <div class="shutdown-card-head">
+            <div>
+              <strong>${escapeHtml(formatShutdownValue(event.shutdown_reason))}</strong>
+              <span>${escapeHtml(formatShutdownValue(event.command_origin_label))}</span>
+            </div>
+            <span>${escapeHtml(formatShutdownValue(event.topic))}</span>
+          </div>
+          <div class="shutdown-field-grid">${fields}</div>
+          <details class="shutdown-payload">
+            <summary>Payload recebido</summary>
+            <pre>${escapeHtml(formatShutdownValue(event.raw_payload))}</pre>
+          </details>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function openShutdownsModal() {
+  if (!ui.shutdownsModal) return;
+  renderShutdownsModalContent();
+  ui.shutdownsModal.hidden = false;
+  ui.shutdownsModalClose?.focus();
+}
+
+function closeShutdownsModal() {
+  if (!ui.shutdownsModal) return;
+  ui.shutdownsModal.hidden = true;
+  ui.pivotShutdownsBtn?.focus();
+}
+
 function normalizeRange(pivot) {
   const nowTs = resolveTimelineReferenceNowTs(pivot);
   const timeline = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
@@ -4772,14 +4902,17 @@ function renderPivotView() {
   const pivot = state.pivotData;
   if (!pivot || !state.selectedPivot) {
     ui.pivotView.hidden = true;
+    if (ui.pivotShutdownsBtn) ui.pivotShutdownsBtn.disabled = true;
     syncPivotDeleteControl();
     syncPivotTechnologyControl();
     clearConnectivitySegmentSelection();
     renderSettingsModalContent();
+    renderShutdownsModalContent();
     return;
   }
 
   ui.pivotView.hidden = false;
+  if (ui.pivotShutdownsBtn) ui.pivotShutdownsBtn.disabled = false;
   syncPivotDeleteControl();
   syncPivotTechnologyControl();
   const summary = pivot.summary || {};
@@ -4856,6 +4989,7 @@ function renderPivotView() {
   renderTimeline(pivot);
   renderCloud2Table(pivot);
   renderSettingsModalContent();
+  renderShutdownsModalContent();
 }
 
 async function loadUiConfig() {
@@ -6525,8 +6659,14 @@ function wireEvents() {
   if (ui.pivotSettingsBtn) {
     ui.pivotSettingsBtn.addEventListener("click", openSettingsModal);
   }
+  if (ui.pivotShutdownsBtn) {
+    ui.pivotShutdownsBtn.addEventListener("click", openShutdownsModal);
+  }
   if (ui.settingsModalClose) {
     ui.settingsModalClose.addEventListener("click", closeSettingsModal);
+  }
+  if (ui.shutdownsModalClose) {
+    ui.shutdownsModalClose.addEventListener("click", closeShutdownsModal);
   }
   if (ui.requestNetworkConfigBtn) {
     ui.requestNetworkConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("02"));
@@ -6581,9 +6721,18 @@ function wireEvents() {
       if (event.target === ui.settingsModal) closeSettingsModal();
     });
   }
+  if (ui.shutdownsModal) {
+    ui.shutdownsModal.addEventListener("click", (event) => {
+      if (event.target === ui.shutdownsModal) closeShutdownsModal();
+    });
+  }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && ui.settingsModal && !ui.settingsModal.hidden) {
       closeSettingsModal();
+      return;
+    }
+    if (event.key === "Escape" && ui.shutdownsModal && !ui.shutdownsModal.hidden) {
+      closeShutdownsModal();
     }
   });
   if (ui.bulkResetPivotsBtn) {

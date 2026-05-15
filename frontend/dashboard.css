@@ -2032,6 +2032,113 @@ a:focus {
   padding: 14px 16px 16px;
 }
 
+.shutdowns-modal {
+  width: min(860px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.shutdowns-modal-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.shutdown-empty {
+  border: 1px dashed #c8ddcf;
+  border-radius: 14px;
+  background: #f7fbf8;
+  color: #49695b;
+  padding: 16px;
+}
+
+.shutdown-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d9ebe0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfdfb, #f6fbf8);
+  padding: 12px;
+}
+
+.shutdown-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.shutdown-card-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.shutdown-card-head strong {
+  font-size: 16px;
+}
+
+.shutdown-card-head span {
+  color: #49695b;
+  font-size: 12px;
+}
+
+.shutdown-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.shutdown-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid #e0eee5;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 9px;
+}
+
+.shutdown-field span {
+  color: #406254;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shutdown-field strong {
+  color: #102f23;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.shutdown-field small {
+  color: #5f776b;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.shutdown-payload {
+  border-top: 1px solid #e0eee5;
+  padding-top: 10px;
+}
+
+.shutdown-payload summary {
+  cursor: pointer;
+  color: #1a6340;
+  font-size: 12px;
+}
+
+.shutdown-payload pre {
+  margin: 8px 0 0;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid #d6e6db;
+  background: #f3f8f5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+}
+
 .settings-config-card {
   display: grid;
   gap: 12px;
@@ -2140,6 +2247,10 @@ a:focus {
   }
 
   .pivot-config-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shutdown-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

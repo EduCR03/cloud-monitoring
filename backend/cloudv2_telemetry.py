@@ -25,6 +25,7 @@ TOPIC_ERROR = "cloudv2-error"
 TOPIC_SCHEDULING = "cloudv2-scheduling"
 TOPIC_CONFIG = "cloudv2-config"
 EVENT_ONLY_TOPICS = (TOPIC_SHUTDOWN, TOPIC_ERROR, TOPIC_SCHEDULING)
+SHUTDOWN_HISTORY_TOPICS = (TOPIC_SHUTDOWN, TOPIC_ERROR)
 MONITOR_TOPICS = (
     TOPIC_CLOUDV2,
     TOPIC_PING,
@@ -43,6 +44,8 @@ TIMELINE_MINI_WINDOW_SEC = 30 * 24 * 3600
 TIMELINE_MINI_EMPTY_FALLBACK_SEC = 24 * 3600
 SUMMARY_CARDS_HISTORY_WINDOW_SEC = 30 * 24 * 3600
 SUMMARY_CARDS_HISTORY_BUCKET_SEC = 3600
+SHUTDOWN_HISTORY_WINDOW_SEC = 30 * 24 * 3600
+SHUTDOWN_HISTORY_MAX_ITEMS = 500
 
 STATUS_LABELS = {
     "green": "Online",
@@ -457,6 +460,167 @@ def parse_comm_main_mode_config_payload(parsed):
     return {
         "comm_main_mode": _normalize_text(parts[2]) if len(parts) > 2 else None,
     }
+
+
+def parse_shutdown_reason_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("28",):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    return {
+        "idp": "28",
+        "pivot_id": _normalize_text(parts[1]) if len(parts) > 1 else None,
+        "command_origin": _normalize_text(parts[2]) if len(parts) > 2 else None,
+        "shutdown_idp": _normalize_text(parts[3]) if len(parts) > 3 else None,
+        "schedule_id": _normalize_text(parts[4]) if len(parts) > 4 else None,
+        "shutdown_reason": _normalize_text(parts[5]) if len(parts) > 5 else None,
+        "physical_barrier": _parse_config_bool(parts[6]) if len(parts) > 6 else None,
+        "position": _safe_int(parts[7], None) if len(parts) > 7 else None,
+        "board_datetime": _normalize_text(parts[8]) if len(parts) > 8 else None,
+    }
+
+
+def _describe_shutdown_origin(value):
+    raw = _normalize_text(value)
+    if not raw:
+        return "-"
+    labels = {
+        "actuation_app": "Controle interno da placa",
+        "scheduling": "Agendamento",
+        "system_monitoring": "Monitoramento interno",
+        "soil_app": "Aplicativo Soil",
+        "nimbus_app": "Aplicativo Nimbus",
+    }
+    return labels.get(raw.lower(), raw)
+
+
+def _describe_shutdown_agent_idp(value):
+    raw = _normalize_text(value)
+    if not raw:
+        return "-"
+    normalized = str(_safe_int(raw, raw))
+    if normalized == "30":
+        return "Desligamento manual"
+    if normalized == "1":
+        return "Aplicativo externo"
+    if normalized in ("14", "15", "16", "17"):
+        return "Agendamento"
+    return f"IDP {raw}"
+
+
+def _describe_physical_barrier(value):
+    parsed = _parse_config_bool(value)
+    if parsed is True:
+        return "Sim, perto da barreira"
+    if parsed is False:
+        return "Nao"
+    return "-"
+
+
+def _build_shutdown_reason_event(parsed, topic, ts, raw_payload=None):
+    shutdown = parse_shutdown_reason_payload(parsed)
+    if shutdown is None:
+        return None
+
+    raw_text = _normalize_text(raw_payload or parsed.get("raw"))
+    event = dict(shutdown)
+    event.update(
+        {
+            "ts": _safe_float(ts, None),
+            "at": _ts_to_str(ts),
+            "topic": _normalize_text(topic),
+            "raw_payload": raw_text,
+            "command_origin_label": _describe_shutdown_origin(shutdown.get("command_origin")),
+            "shutdown_idp_label": _describe_shutdown_agent_idp(shutdown.get("shutdown_idp")),
+            "physical_barrier_label": _describe_physical_barrier(shutdown.get("physical_barrier")),
+        }
+    )
+    return event
+
+
+def _normalize_shutdown_reason_event(value):
+    if not isinstance(value, dict):
+        return None
+
+    raw_payload = _normalize_text(value.get("raw_payload") or value.get("raw"))
+    topic = _normalize_text(value.get("topic")) or TOPIC_SHUTDOWN
+    ts = _safe_float(value.get("ts"), None)
+    if raw_payload:
+        parsed, parse_error = parse_device_payload(raw_payload)
+        if parse_error is None:
+            rebuilt = _build_shutdown_reason_event(parsed, topic, ts, raw_payload=raw_payload)
+            if rebuilt is not None:
+                return rebuilt
+
+    event = {
+        "idp": "28",
+        "pivot_id": _normalize_text(value.get("pivot_id")) or None,
+        "command_origin": _normalize_text(value.get("command_origin")) or None,
+        "shutdown_idp": _normalize_text(value.get("shutdown_idp")) or None,
+        "schedule_id": _normalize_text(value.get("schedule_id")) or None,
+        "shutdown_reason": _normalize_text(value.get("shutdown_reason")) or None,
+        "physical_barrier": _parse_config_bool(value.get("physical_barrier")),
+        "position": _safe_int(value.get("position"), None),
+        "board_datetime": _normalize_text(value.get("board_datetime")) or None,
+        "ts": ts,
+        "at": _ts_to_str(ts),
+        "topic": topic,
+        "raw_payload": raw_payload,
+    }
+    event["command_origin_label"] = _describe_shutdown_origin(event.get("command_origin"))
+    event["shutdown_idp_label"] = _describe_shutdown_agent_idp(event.get("shutdown_idp"))
+    event["physical_barrier_label"] = _describe_physical_barrier(event.get("physical_barrier"))
+    return event
+
+
+def _normalize_shutdown_history(items, now=None):
+    if not isinstance(items, list):
+        return []
+
+    cutoff = None
+    if now is not None:
+        cutoff = float(now) - SHUTDOWN_HISTORY_WINDOW_SEC
+
+    normalized = []
+    seen = set()
+    for item in items:
+        event = _normalize_shutdown_reason_event(item)
+        if event is None:
+            continue
+        ts = _safe_float(event.get("ts"), None)
+        if cutoff is not None and ts is not None and ts < cutoff:
+            continue
+        key = _normalize_text(event.get("raw_payload"))
+        if not key:
+            key = json.dumps(
+                {
+                    "topic": event.get("topic"),
+                    "pivot_id": event.get("pivot_id"),
+                    "command_origin": event.get("command_origin"),
+                    "shutdown_idp": event.get("shutdown_idp"),
+                    "schedule_id": event.get("schedule_id"),
+                    "shutdown_reason": event.get("shutdown_reason"),
+                    "physical_barrier": event.get("physical_barrier"),
+                    "position": event.get("position"),
+                    "board_datetime": event.get("board_datetime"),
+                },
+                sort_keys=True,
+                ensure_ascii=False,
+            )
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(event)
+
+    normalized.sort(key=lambda item: _safe_float(item.get("ts"), 0) or 0, reverse=True)
+    return normalized[:SHUTDOWN_HISTORY_MAX_ITEMS]
 
 
 PIVOT_CONFIG_VALUE_KEYS = (
@@ -3436,6 +3600,7 @@ class TelemetryStore:
             "cloud2_events": [],
             "ping_rssi_points": [],
             "drop_events": [],
+            "shutdown_events": [],
             "timeline": [],
             "probe": {
                 "enabled": probe_enabled,
@@ -3984,6 +4149,10 @@ class TelemetryStore:
 
     def _record_generic_topic_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         normalized_topic = str(topic or "").strip()
+        if normalized_topic in SHUTDOWN_HISTORY_TOPICS and str((parsed or {}).get("idp") or "").strip() == "28":
+            if self._record_shutdown_reason_locked(pivot, parsed, normalized_topic, ts, raw_payload=raw_payload):
+                return
+
         event_type = re.sub(r"[^a-zA-Z0-9_]+", "_", normalized_topic).strip("_") or "topic_event"
         self._record_timeline_locked(
             pivot,
@@ -3999,6 +4168,40 @@ class TelemetryStore:
             raw_payload=raw_payload,
             parsed_payload=parsed,
         )
+
+    def _record_shutdown_reason_locked(self, pivot, parsed, topic, ts, raw_payload=None):
+        shutdown_event = _build_shutdown_reason_event(parsed, topic, ts, raw_payload=raw_payload)
+        if shutdown_event is None:
+            return False
+
+        history = pivot.setdefault("shutdown_events", [])
+        if not isinstance(history, list):
+            history = []
+            pivot["shutdown_events"] = history
+
+        raw_key = _normalize_text(shutdown_event.get("raw_payload"))
+        if raw_key and any(_normalize_text(item.get("raw_payload")) == raw_key for item in history if isinstance(item, dict)):
+            return True
+
+        history.append(shutdown_event)
+        pivot["shutdown_events"] = list(reversed(_normalize_shutdown_history(history, now=ts)))
+
+        self._record_timeline_locked(
+            pivot,
+            event_type="cloudv2_shutdown",
+            topic=topic,
+            ts=ts,
+            summary="Motivo de desligamento recebido.",
+            details={
+                "idp": "28",
+                "field_count": len(parsed.get("parts", [])),
+                "shutdown": dict(shutdown_event),
+            },
+            source_topic=topic,
+            raw_payload=raw_payload,
+            parsed_payload=parsed,
+        )
+        return True
 
     def _record_pivot_config_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         normalized_topic = str(topic or "").strip()
@@ -4391,6 +4594,11 @@ class TelemetryStore:
         if len(drop_events) != len(pivot["drop_events"]):
             changed = True
         pivot["drop_events"] = drop_events
+
+        shutdown_events = _normalize_shutdown_history(pivot.get("shutdown_events", []), now=now)
+        if len(shutdown_events) != len(pivot.get("shutdown_events", [])):
+            changed = True
+        pivot["shutdown_events"] = list(reversed(shutdown_events))
 
         probe = pivot["probe"]
         probe_events = [event for event in probe["events"] if _safe_float(event.get("ts"), 0) >= cutoff]
@@ -5142,6 +5350,25 @@ class TelemetryStore:
         comm_main_mode_config_summary["pending"] = comm_last_request_ts is not None and (
             comm_last_response_ts is None or comm_last_response_ts < comm_last_request_ts
         )
+        shutdown_source_items = list(pivot.get("shutdown_events", [])) if isinstance(pivot.get("shutdown_events"), list) else []
+        for event in pivot.get("timeline", []):
+            if not isinstance(event, dict):
+                continue
+            topic = _normalize_text(event.get("topic"))
+            if topic not in SHUTDOWN_HISTORY_TOPICS:
+                continue
+            details = event.get("details") if isinstance(event.get("details"), dict) else {}
+            raw_payload = _normalize_text(details.get("raw_payload"))
+            if not raw_payload:
+                continue
+            shutdown_source_items.append(
+                {
+                    "ts": _safe_float(event.get("ts"), None),
+                    "topic": topic,
+                    "raw_payload": raw_payload,
+                }
+            )
+        shutdown_history = _normalize_shutdown_history(shutdown_source_items, now=now)
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -5248,6 +5475,8 @@ class TelemetryStore:
             "reboot_config": reboot_config_summary,
             "virtual_barrier_config": virtual_barrier_config_summary,
             "comm_main_mode_config": comm_main_mode_config_summary,
+            "shutdown_history": shutdown_history,
+            "shutdown_history_count": len(shutdown_history),
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5476,6 +5705,11 @@ class TelemetryStore:
                         raw_list = raw_pivot.get(list_field)
                         if isinstance(raw_list, list):
                             pivot[list_field] = raw_list[-self.max_events_per_pivot :]
+                    raw_shutdown_events = raw_pivot.get("shutdown_events")
+                    if isinstance(raw_shutdown_events, list):
+                        pivot["shutdown_events"] = list(
+                            reversed(_normalize_shutdown_history(raw_shutdown_events, now=time.time()))
+                        )
 
                     raw_probe = raw_pivot.get("probe")
                     if isinstance(raw_probe, dict):

@@ -16,6 +16,7 @@ from backend.cloudv2_telemetry import (
     parse_reboot_config_payload,
     parse_rush_config_payload,
     parse_sector_config_payload,
+    parse_shutdown_reason_payload,
     parse_virtual_barrier_config_payload,
 )
 
@@ -698,6 +699,47 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 probe_sent = next(item for item in snapshot["timeline"] if item.get("type") == "probe_sent")
                 self.assertEqual(probe_sent["topic"], "PivotA_1")
                 self.assertEqual(probe_sent["details"]["raw_payload"], "#11$")
+            finally:
+                store.stop()
+
+    def test_shutdown_history_parses_and_deduplicates_idp28(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                first_payload = "#28-PivotA_1-soil_app-01-0-alex-0-124-15/05/2026_11:29:40$"
+                second_payload = "#28-PivotA_1-actuation_app-30-0-manual-1-110-15/05/2026_16:01:08$"
+                parsed, error = parse_device_payload(first_payload)
+                self.assertIsNone(error)
+                parsed_shutdown = parse_shutdown_reason_payload(parsed)
+                self.assertEqual(parsed_shutdown["command_origin"], "soil_app")
+                self.assertEqual(parsed_shutdown["shutdown_idp"], "01")
+                self.assertFalse(parsed_shutdown["physical_barrier"])
+                self.assertEqual(parsed_shutdown["position"], 124)
+
+                self.assertTrue(
+                    store.process_message("cloudv2-shutdown", first_payload, ts=1_773_171_010.0)["accepted"]
+                )
+                self.assertTrue(
+                    store.process_message("cloudv2-error", second_payload, ts=1_773_171_030.0)["accepted"]
+                )
+                self.assertTrue(
+                    store.process_message("cloudv2-shutdown", first_payload, ts=1_773_171_050.0)["accepted"]
+                )
+
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_060.0)
+                history = snapshot["summary"]["shutdown_history"]
+                self.assertEqual(len(history), 2)
+                self.assertEqual(history[0]["raw_payload"], second_payload)
+                self.assertEqual(history[0]["topic"], "cloudv2-error")
+                self.assertEqual(history[0]["command_origin_label"], "Controle interno da placa")
+                self.assertEqual(history[0]["shutdown_idp_label"], "Desligamento manual")
+                self.assertEqual(history[0]["physical_barrier_label"], "Sim, perto da barreira")
+                self.assertEqual(history[1]["raw_payload"], first_payload)
+                self.assertEqual(history[1]["command_origin_label"], "Aplicativo Soil")
+                self.assertEqual(history[1]["shutdown_idp_label"], "Aplicativo externo")
             finally:
                 store.stop()
 

@@ -220,6 +220,13 @@
                 aria-label="Abrir configurações"
                 title="Configurações"
               >⚙</button>
+              <button
+                id="pivotShutdownsBtn"
+                class="icon-button"
+                type="button"
+                aria-label="Abrir últimos desligas"
+                title="Últimos desligas"
+              >⏻</button>
               <button id="resetPivotModemBtn" class="danger-inline" type="button">Reset Modem</button>
               <button id="deletePivotBtn" class="danger" type="button">Deletar pivô</button>
             </div>
@@ -755,9 +762,24 @@
     </section>
   </div>
 
+  <div id="shutdownsModal" class="modal-backdrop" hidden>
+    <section
+      class="modal-card shutdowns-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shutdownsModalTitle"
+    >
+      <div class="modal-head">
+        <h2 id="shutdownsModalTitle">Últimos desligas</h2>
+        <button id="shutdownsModalClose" class="ghost icon-close" type="button" aria-label="Fechar últimos desligas">×</button>
+      </div>
+      <div id="shutdownsModalBody" class="shutdowns-modal-body"></div>
+    </section>
+  </div>
+
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515q"></script>
+  <script src="dashboard.js?v=20260515r"></script>
 </body>
 </html>
