@@ -640,6 +640,41 @@
             </div>
           </div>
         </section>
+
+        <section class="settings-config-card">
+          <div class="settings-section-head">
+            <div>
+              <h3>Retorno físico</h3>
+              <p id="physicalBarrierConfigHint">Peça a configuração para preencher os campos.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="requestPhysicalBarrierConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendPhysicalBarrierConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
+          </div>
+          <div class="pivot-config-grid" aria-label="Campos de configuração do retorno físico">
+            <label>
+              <span>Ângulo inicial</span>
+              <input id="physicalBarrierStartAngle" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Ângulo final</span>
+              <input id="physicalBarrierEndAngle" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Retorno automático (0/1)</span>
+              <input id="physicalBarrierAutomaticReturn" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Retorno com água (0/1)</span>
+              <input id="physicalBarrierWaterReturn" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Tempo saindo barreira</span>
+              <input id="physicalBarrierLeavingTime" type="text" inputmode="numeric" value="-"/>
+            </label>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -647,6 +682,6 @@
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515m"></script>
+  <script src="dashboard.js?v=20260515n"></script>
 </body>
 </html>

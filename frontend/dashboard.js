@@ -205,6 +205,14 @@ const ui = HAS_DOM
       sectorConfigEnd3: document.getElementById("sectorConfigEnd3"),
       sectorConfigStart4: document.getElementById("sectorConfigStart4"),
       sectorConfigEnd4: document.getElementById("sectorConfigEnd4"),
+      requestPhysicalBarrierConfigBtn: document.getElementById("requestPhysicalBarrierConfigBtn"),
+      sendPhysicalBarrierConfigBtn: document.getElementById("sendPhysicalBarrierConfigBtn"),
+      physicalBarrierConfigHint: document.getElementById("physicalBarrierConfigHint"),
+      physicalBarrierStartAngle: document.getElementById("physicalBarrierStartAngle"),
+      physicalBarrierEndAngle: document.getElementById("physicalBarrierEndAngle"),
+      physicalBarrierAutomaticReturn: document.getElementById("physicalBarrierAutomaticReturn"),
+      physicalBarrierWaterReturn: document.getElementById("physicalBarrierWaterReturn"),
+      physicalBarrierLeavingTime: document.getElementById("physicalBarrierLeavingTime"),
     }
   : {};
 
@@ -3439,6 +3447,12 @@ function getSelectedSectorConfig() {
   return config || {};
 }
 
+function getSelectedPhysicalBarrierConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.physical_barrier_config === "object" ? summary.physical_barrier_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3490,6 +3504,11 @@ function wireProtectedEditableInputs() {
     ui.sectorConfigEnd3,
     ui.sectorConfigStart4,
     ui.sectorConfigEnd4,
+    ui.physicalBarrierStartAngle,
+    ui.physicalBarrierEndAngle,
+    ui.physicalBarrierAutomaticReturn,
+    ui.physicalBarrierWaterReturn,
+    ui.physicalBarrierLeavingTime,
   ].filter(Boolean);
 
   protectedInputs.forEach((input) => {
@@ -3592,6 +3611,7 @@ function renderSettingsModalContent() {
   const config = getSelectedPivotConfig();
   const rushConfig = getSelectedRushConfig();
   const sectorConfig = getSelectedSectorConfig();
+  const physicalBarrierConfig = getSelectedPhysicalBarrierConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
   setPivotConfigField(ui.pivotConfigPressure, config.pressure);
@@ -3628,6 +3648,27 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestSectorConfigBtn, "05");
   renderConfigSendButton(ui.sendSectorConfigBtn, "05");
+
+  setPivotConfigField(ui.physicalBarrierStartAngle, physicalBarrierConfig.start_angle);
+  setPivotConfigField(ui.physicalBarrierEndAngle, physicalBarrierConfig.end_angle);
+  setPivotConfigField(
+    ui.physicalBarrierAutomaticReturn,
+    physicalBarrierConfig.automatic_return === null || physicalBarrierConfig.automatic_return === undefined
+      ? null
+      : (physicalBarrierConfig.automatic_return ? "1" : "0")
+  );
+  setPivotConfigField(
+    ui.physicalBarrierWaterReturn,
+    physicalBarrierConfig.water_return === null || physicalBarrierConfig.water_return === undefined
+      ? null
+      : (physicalBarrierConfig.water_return ? "1" : "0")
+  );
+  setPivotConfigField(ui.physicalBarrierLeavingTime, physicalBarrierConfig.time_leaving_barrier);
+  if (ui.physicalBarrierConfigHint) {
+    ui.physicalBarrierConfigHint.textContent = resolveConfigHintText(physicalBarrierConfig);
+  }
+  renderConfigRequestButton(ui.requestPhysicalBarrierConfigBtn, "22");
+  renderConfigSendButton(ui.sendPhysicalBarrierConfigBtn, "22");
 }
 
 function openSettingsModal() {
@@ -5597,6 +5638,15 @@ function readConfigValues(idp) {
       })),
     };
   }
+  if (idp === "22") {
+    return {
+      start_angle: readConfigInputValue(ui.physicalBarrierStartAngle),
+      end_angle: readConfigInputValue(ui.physicalBarrierEndAngle),
+      automatic_return: readConfigInputValue(ui.physicalBarrierAutomaticReturn),
+      water_return: readConfigInputValue(ui.physicalBarrierWaterReturn),
+      time_leaving_barrier: readConfigInputValue(ui.physicalBarrierLeavingTime),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5624,6 +5674,14 @@ function markConfigInputsClean(idp) {
             ui.sectorConfigStart4,
             ui.sectorConfigEnd4,
           ]
+        : idp === "22"
+          ? [
+              ui.physicalBarrierStartAngle,
+              ui.physicalBarrierEndAngle,
+              ui.physicalBarrierAutomaticReturn,
+              ui.physicalBarrierWaterReturn,
+              ui.physicalBarrierLeavingTime,
+            ]
         : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
 }
@@ -5637,6 +5695,9 @@ function getConfigActionButtons(idp) {
   }
   if (idp === "05") {
     return { request: ui.requestSectorConfigBtn, send: ui.sendSectorConfigBtn };
+  }
+  if (idp === "22") {
+    return { request: ui.requestPhysicalBarrierConfigBtn, send: ui.sendPhysicalBarrierConfigBtn };
   }
   return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
@@ -6357,6 +6418,12 @@ function wireEvents() {
   }
   if (ui.sendSectorConfigBtn) {
     ui.sendSectorConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("05"));
+  }
+  if (ui.requestPhysicalBarrierConfigBtn) {
+    ui.requestPhysicalBarrierConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("22"));
+  }
+  if (ui.sendPhysicalBarrierConfigBtn) {
+    ui.sendPhysicalBarrierConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("22"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {

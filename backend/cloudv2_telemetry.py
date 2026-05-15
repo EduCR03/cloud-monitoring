@@ -383,6 +383,27 @@ def parse_sector_config_payload(parsed):
     }
 
 
+def parse_physical_barrier_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("22",):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    return {
+        "start_angle": _safe_int(parts[2], None) if len(parts) > 2 else None,
+        "end_angle": _safe_int(parts[3], None) if len(parts) > 3 else None,
+        "automatic_return": _parse_config_bool(parts[4]) if len(parts) > 4 else None,
+        "water_return": _parse_config_bool(parts[5]) if len(parts) > 5 else None,
+        "time_leaving_barrier": _safe_int(parts[6], None) if len(parts) > 6 else None,
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -394,6 +415,13 @@ PIVOT_CONFIG_VALUE_KEYS = (
 NETWORK_CONFIG_VALUE_KEYS = ("gprs_id", "modem_apn", "wifi_ssid", "wifi_pass")
 RUSH_CONFIG_VALUE_KEYS = ("start_time_hhmm", "end_time_hhmm", "enabled")
 SECTOR_CONFIG_VALUE_KEYS = ("sector_number", "sectors")
+PHYSICAL_BARRIER_CONFIG_VALUE_KEYS = (
+    "start_angle",
+    "end_angle",
+    "automatic_return",
+    "water_return",
+    "time_leaving_barrier",
+)
 
 
 def _new_pivot_config_state():
@@ -449,6 +477,20 @@ def _new_sector_config_state():
         "sector_number": None,
         "sectors": [{"start_angle": None, "end_angle": None} for _ in range(4)],
     }
+    return state
+
+
+def _new_physical_barrier_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in PHYSICAL_BARRIER_CONFIG_VALUE_KEYS:
+        state[key] = None
     return state
 
 
@@ -530,7 +572,26 @@ def _normalize_sector_config_state(value):
     return normalized
 
 
-SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05")
+def _normalize_physical_barrier_config_state(value):
+    normalized = _new_physical_barrier_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["start_angle"] = _safe_int(value.get("start_angle"), None)
+    normalized["end_angle"] = _safe_int(value.get("end_angle"), None)
+    normalized["automatic_return"] = _parse_config_bool(value.get("automatic_return"))
+    normalized["water_return"] = _parse_config_bool(value.get("water_return"))
+    normalized["time_leaving_barrier"] = _safe_int(value.get("time_leaving_barrier"), None)
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05", "22")
 
 
 def _config_state_spec(idp):
@@ -543,6 +604,8 @@ def _config_state_spec(idp):
         return ("rush_config", parse_rush_config_payload, _normalize_rush_config_state)
     if normalized == "05":
         return ("sector_config", parse_sector_config_payload, _normalize_sector_config_state)
+    if normalized == "22":
+        return ("physical_barrier_config", parse_physical_barrier_config_payload, _normalize_physical_barrier_config_state)
     return (None, None, None)
 
 
@@ -2224,6 +2287,7 @@ class TelemetryStore:
         pivot["network_config"] = _normalize_network_config_state(summary.get("network_config"))
         pivot["rush_config"] = _normalize_rush_config_state(summary.get("rush_config"))
         pivot["sector_config"] = _normalize_sector_config_state(summary.get("sector_config"))
+        pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(summary.get("physical_barrier_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2910,6 +2974,14 @@ class TelemetryStore:
                     fields.append(str(_validate_config_payload_int(_read_sector_angle_value(safe_values, index, "end_angle"), f"sector_{index + 1}_end_angle", 0, 65535)))
                 else:
                     fields.extend(["0", "0"])
+        elif idp == "22":
+            fields = [
+                str(_validate_config_payload_int(safe_values.get("start_angle"), "start_angle", 0, 65535)),
+                str(_validate_config_payload_int(safe_values.get("end_angle"), "end_angle", 0, 65535)),
+                _validate_config_payload_bool(safe_values.get("automatic_return"), "automatic_return"),
+                _validate_config_payload_bool(safe_values.get("water_return"), "water_return"),
+                str(_validate_config_payload_int(safe_values.get("time_leaving_barrier"), "time_leaving_barrier", 0, 255)),
+            ]
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -3206,6 +3278,7 @@ class TelemetryStore:
             "network_config": _new_network_config_state(),
             "rush_config": _new_rush_config_state(),
             "sector_config": _new_sector_config_state(),
+            "physical_barrier_config": _new_physical_barrier_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3298,6 +3371,11 @@ class TelemetryStore:
         baseline_sector_config = summary.get("sector_config")
         if isinstance(baseline_sector_config, dict) and baseline_sector_config:
             pivot["sector_config"] = _normalize_sector_config_state(baseline_sector_config)
+            changed = True
+
+        baseline_physical_barrier_config = summary.get("physical_barrier_config")
+        if isinstance(baseline_physical_barrier_config, dict) and baseline_physical_barrier_config:
+            pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(baseline_physical_barrier_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -4824,6 +4902,15 @@ class TelemetryStore:
         sector_config_summary["pending"] = sector_last_request_ts is not None and (
             sector_last_response_ts is None or sector_last_response_ts < sector_last_request_ts
         )
+        physical_barrier_config = _normalize_physical_barrier_config_state(pivot.get("physical_barrier_config"))
+        physical_barrier_config_summary = dict(physical_barrier_config)
+        physical_barrier_config_summary["last_request_at"] = _ts_to_str(physical_barrier_config.get("last_request_ts"))
+        physical_barrier_config_summary["last_response_at"] = _ts_to_str(physical_barrier_config.get("last_response_ts"))
+        barrier_last_request_ts = _safe_float(physical_barrier_config.get("last_request_ts"), None)
+        barrier_last_response_ts = _safe_float(physical_barrier_config.get("last_response_ts"), None)
+        physical_barrier_config_summary["pending"] = barrier_last_request_ts is not None and (
+            barrier_last_response_ts is None or barrier_last_response_ts < barrier_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -4926,6 +5013,7 @@ class TelemetryStore:
             "network_config": network_config_summary,
             "rush_config": rush_config_summary,
             "sector_config": sector_config_summary,
+            "physical_barrier_config": physical_barrier_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5192,6 +5280,7 @@ class TelemetryStore:
                     pivot["pivot_config"] = _normalize_pivot_config_state(raw_pivot.get("pivot_config"))
                     pivot["rush_config"] = _normalize_rush_config_state(raw_pivot.get("rush_config"))
                     pivot["sector_config"] = _normalize_sector_config_state(raw_pivot.get("sector_config"))
+                    pivot["physical_barrier_config"] = _normalize_physical_barrier_config_state(raw_pivot.get("physical_barrier_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):
