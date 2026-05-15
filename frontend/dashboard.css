@@ -1846,45 +1846,31 @@ a:focus {
   gap: 8px;
 }
 
-.timeline-topic-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 0 0 10px;
+.timeline-head {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 260px) auto;
+  gap: 14px;
+  align-items: end;
 }
 
-.timeline-topic-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  border: 1px solid #bfd9ca;
-  border-radius: 999px;
-  background: #f8fcfa;
-  color: #143d2c;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
+.timeline-topic-field {
+  min-width: 180px;
 }
 
-.timeline-topic-tab strong {
-  min-width: 20px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #e8f3ed;
-  color: #1a6340;
-  text-align: center;
+.timeline-topic-field select {
+  min-height: 38px;
+  padding: 8px 12px;
 }
 
-.timeline-topic-tab.active {
-  border-color: #1c6a43;
-  background: #1c6a43;
-  color: #fff;
-}
+@media (max-width: 760px) {
+  .timeline-head {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
 
-.timeline-topic-tab.active strong {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  .timeline-head .pager {
+    justify-content: flex-start;
+  }
 }
 
 .event {

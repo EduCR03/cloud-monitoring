@@ -160,7 +160,7 @@ const ui = HAS_DOM
       timelinePrev: document.getElementById("timelinePrev"),
       timelineNext: document.getElementById("timelineNext"),
       timelinePageInfo: document.getElementById("timelinePageInfo"),
-      timelineTopicTabs: document.getElementById("timelineTopicTabs"),
+      timelineTopicSelect: document.getElementById("timelineTopicSelect"),
       cloud2Table: document.getElementById("cloud2Table"),
       toastRegion: document.getElementById("toastRegion"),
       sessionHint: document.getElementById("sessionHint"),
@@ -4244,33 +4244,12 @@ function setTimelinePageForFilter(filterKey, page) {
   if (key === "global") state.timelinePage = safePage;
 }
 
-function renderTimelineTopicTabs(pivot, activeFilter) {
-  if (!ui.timelineTopicTabs) return;
-  const activeKey = normalizeConnectivityEventTopicFilter(activeFilter);
-  ui.timelineTopicTabs.innerHTML = CONNECTIVITY_EVENT_TOPIC_FILTERS
-    .map((item) => {
-      const count = getConnectivityEventsPanelFiltered(pivot, item.key).length;
-      const isActive = item.key === activeKey;
-      return `
-        <button
-          type="button"
-          class="timeline-topic-tab${isActive ? " active" : ""}"
-          data-topic-filter="${escapeHtml(item.key)}"
-          role="tab"
-          aria-selected="${isActive ? "true" : "false"}"
-        >
-          <span>${escapeHtml(item.label)}</span>
-          <strong>${count}</strong>
-        </button>
-      `;
-    })
-    .join("");
-}
-
 function renderTimeline(pivot) {
   const activeFilter = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
   state.timelineTopicFilter = activeFilter;
-  renderTimelineTopicTabs(pivot, activeFilter);
+  if (ui.timelineTopicSelect && ui.timelineTopicSelect.value !== activeFilter) {
+    ui.timelineTopicSelect.value = activeFilter;
+  }
 
   const allEvents = getConnectivityEventsPanelFiltered(pivot, activeFilter);
   const totalPages = Math.max(1, Math.ceil(allEvents.length / state.timelinePageSize));
@@ -5995,11 +5974,9 @@ function wireEvents() {
     setTimelinePageForFilter(filterKey, Math.min(total, getTimelinePageForFilter(filterKey) + 1));
     renderPivotView();
   });
-  if (ui.timelineTopicTabs) {
-    ui.timelineTopicTabs.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-topic-filter]");
-      if (!button) return;
-      const filterKey = normalizeConnectivityEventTopicFilter(button.dataset.topicFilter);
+  if (ui.timelineTopicSelect) {
+    ui.timelineTopicSelect.addEventListener("change", () => {
+      const filterKey = normalizeConnectivityEventTopicFilter(ui.timelineTopicSelect.value);
       state.timelineTopicFilter = filterKey;
       setTimelinePageForFilter(filterKey, 1);
       renderPivotView();

@@ -420,20 +420,25 @@
         </section>
 
         <section class="timeline-panel">
-          <div class="panel-head tight">
+          <div class="panel-head tight timeline-head">
             <h3>Eventos de conectividade</h3>
+            <label class="field compact timeline-topic-field">
+              <span>Tópico</span>
+              <select id="timelineTopicSelect">
+                <option value="global" selected>Global</option>
+                <option value="cloudv2">cloudv2</option>
+                <option value="cloudv2-info">cloudv2-info</option>
+                <option value="cloudv2-shutdown">cloudv2-shutdown</option>
+                <option value="cloudv2-error">cloudv2-error</option>
+                <option value="pivot">Pivot_id</option>
+              </select>
+            </label>
             <div class="pager">
               <button id="timelinePrev" class="ghost">Anterior</button>
               <span id="timelinePageInfo">Página 1/1</span>
               <button id="timelineNext" class="ghost">Próxima</button>
             </div>
           </div>
-          <div
-            id="timelineTopicTabs"
-            class="timeline-topic-tabs"
-            role="tablist"
-            aria-label="Filtrar eventos por tópico"
-          ></div>
           <div id="timelineList" class="timeline"></div>
         </section>
 
