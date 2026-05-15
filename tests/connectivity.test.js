@@ -348,6 +348,27 @@ test("ui: pivot com RSSI exibe o card de RSSI", () => {
   assert.equal(shouldRender, true);
 });
 
+test("ui: grafico RSSI usa janela real dos pontos para preencher a largura", () => {
+  const domain = _test.resolveRssiChartDomain(
+    [
+      { ts: 1_000, rssi: 12 },
+      { ts: 1_050, rssi: 18 },
+      { ts: 1_100, rssi: 16 },
+    ],
+    0,
+    10_000
+  );
+
+  assert.deepEqual(domain, { startTs: 1_000, endTs: 1_100 });
+});
+
+test("ui: grafico RSSI cria dominio minimo para ponto unico", () => {
+  const domain = _test.resolveRssiChartDomain([{ ts: 1_000, rssi: 12 }], 0, 10_000);
+
+  assert.equal(domain.startTs, 970);
+  assert.equal(domain.endTs, 1030);
+});
+
 test("ui: ordem antiga de colunas é migrada para timeline + sinal/tecnologia", () => {
   const normalized = _test.normalizePivotTableColumnOrder([
     "pivot_id",

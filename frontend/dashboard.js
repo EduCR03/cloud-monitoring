@@ -3445,6 +3445,43 @@ function buildRssiSeries(pivot, startTs, endTs) {
   };
 }
 
+function resolveRssiChartDomain(points, fallbackStartTs, fallbackEndTs) {
+  const safePoints = Array.isArray(points)
+    ? points
+      .map((point) => ({
+        ts: Number((point || {}).ts || 0),
+        rssi: Number((point || {}).rssi),
+      }))
+      .filter((point) => Number.isFinite(point.ts) && point.ts > 0 && isValidRssiValue(point.rssi))
+      .sort((a, b) => a.ts - b.ts)
+    : [];
+
+  if (safePoints.length >= 2) {
+    const firstTs = safePoints[0].ts;
+    const lastTs = safePoints[safePoints.length - 1].ts;
+    if (Number.isFinite(firstTs) && Number.isFinite(lastTs) && lastTs > firstTs) {
+      return { startTs: firstTs, endTs: lastTs };
+    }
+  }
+
+  if (safePoints.length === 1) {
+    const centerTs = safePoints[0].ts;
+    return {
+      startTs: centerTs - 30,
+      endTs: centerTs + 30,
+    };
+  }
+
+  const startTs = Number(fallbackStartTs || 0);
+  const endTs = Number(fallbackEndTs || 0);
+  if (Number.isFinite(startTs) && Number.isFinite(endTs) && endTs > startTs) {
+    return { startTs, endTs };
+  }
+
+  const nowTs = Math.floor(Date.now() / 1000);
+  return { startTs: nowTs - 3600, endTs: nowTs };
+}
+
 function resolveDisconnectThresholdSec(summary, settings) {
   const safeSummary = summary || {};
   const safeSettings = settings || {};
@@ -4039,12 +4076,15 @@ function renderRssiChart(pivot) {
   const padBottom = 30;
   const innerWidth = width - padLeft - padRight;
   const innerHeight = height - padTop - padBottom;
-  const duration = Math.max(1, endTs - startTs);
+  const chartDomain = resolveRssiChartDomain(points, startTs, endTs);
+  const chartStartTs = chartDomain.startTs;
+  const chartEndTs = chartDomain.endTs;
+  const duration = Math.max(1, chartEndTs - chartStartTs);
 
   const domainMax = 31;
   const domainSpan = domainMax;
 
-  const xForTs = (ts) => padLeft + ((ts - startTs) / duration) * innerWidth;
+  const xForTs = (ts) => padLeft + ((ts - chartStartTs) / duration) * innerWidth;
   const yForRssi = (rssi) => padTop + ((domainMax - rssi) / domainSpan) * innerHeight;
 
   const pathData = points
@@ -4075,6 +4115,9 @@ function renderRssiChart(pivot) {
       <path class="probe-delay-line" d="${pathData}"></path>
     </svg>
   `;
+
+  ui.rssiStartLabel.textContent = formatShortDateTime(chartStartTs);
+  ui.rssiEndLabel.textContent = formatShortDateTime(chartEndTs);
 
   ui.rssiHint.textContent =
     `Registros no periodo: ${series.sampleCount} | ` +
@@ -5900,6 +5943,7 @@ if (typeof module !== "undefined" && module.exports) {
       setExpectedPivotsPendingState,
       removeExpectedPivotPendingState,
       shouldRenderRssiPanel,
+      resolveRssiChartDomain,
       getProbeResponseInfoDisplayRows,
       formatProbeConfiguredNetworks,
       normalizeSummaryCardsHistoryPoints,
