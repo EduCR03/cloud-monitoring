@@ -590,6 +590,31 @@ test("ui: summary cards history usa a contagem atual do card no ponto mais recen
   assert.equal(points.at(-1).ts, 300);
 });
 
+test("ui: summary cards history nao injeta contagem crua antes da qualidade carregar", () => {
+  const points = _test.buildSummaryCardsDisplayHistoryPoints([
+    { ts: 100, connected_count: 55, disconnected_count: 35, initial_count: 9, total_count: 99 },
+    { ts: 200, connected_count: 55, disconnected_count: 35, initial_count: 9, total_count: 99 },
+  ], null);
+
+  assert.equal(points.at(-1).connected_count, 55);
+  assert.equal(points.at(-1).disconnected_count, 35);
+  assert.equal(points.at(-1).total_count, 99);
+});
+
+test("ui: qualidade completa exige override de todos os pivos", () => {
+  const pivots = [{ pivot_id: "A" }, { pivot_id: "B" }];
+  const maps = {
+    qualityOverridesByPivotId: { A: {}, B: {} },
+    statusOverridesByPivotId: { A: {}, B: {} },
+    connectivitySummaryByPivotId: { A: {}, B: {} },
+    connectivityMiniSegmentsByPivotId: { A: [] },
+  };
+
+  assert.equal(_test.hasCompleteQualityOverridesForPivots(pivots, maps), false);
+  maps.connectivityMiniSegmentsByPivotId.B = [];
+  assert.equal(_test.hasCompleteQualityOverridesForPivots(pivots, maps), true);
+});
+
 test("ui: summary cards history remove outlier recente de warm-up", () => {
   const currentCounts = {
     historyPoint: {

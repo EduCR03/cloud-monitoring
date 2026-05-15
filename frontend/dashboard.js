@@ -205,6 +205,8 @@ const state = {
   qualitySourceSignatureByPivotId: {},
   connectivitySummaryByPivotId: {},
   connectivityMiniSegmentsByPivotId: {},
+  qualityOverridesReady: false,
+  lastStableSummaryCardCounts: null,
   qualityOverridesLastRefreshMs: 0,
   qualityOverrideRefreshIntervalMs: 45000,
   qualityOverrideMaxConcurrency: 3,
@@ -1037,6 +1039,26 @@ function computeSummaryCardCountsFromPivots(pivots = state.pivots) {
   };
 }
 
+function hasCompleteQualityOverridesForPivots(pivots = state.pivots, maps = state) {
+  const safePivots = Array.isArray(pivots) ? pivots : [];
+  if (!safePivots.length) return true;
+  const qualityMap = maps.qualityOverridesByPivotId || {};
+  const statusMap = maps.statusOverridesByPivotId || {};
+  const connectivityMap = maps.connectivitySummaryByPivotId || {};
+  const miniMap = maps.connectivityMiniSegmentsByPivotId || {};
+
+  return safePivots.every((pivot) => {
+    const pivotId = text((pivot || {}).pivot_id, "").trim();
+    if (!pivotId) return true;
+    return (
+      Object.prototype.hasOwnProperty.call(qualityMap, pivotId)
+      && Object.prototype.hasOwnProperty.call(statusMap, pivotId)
+      && Object.prototype.hasOwnProperty.call(connectivityMap, pivotId)
+      && Object.prototype.hasOwnProperty.call(miniMap, pivotId)
+    );
+  });
+}
+
 function resolveSummaryCardsHistoryReferenceTs(payload = state.summaryCardsHistoryPayload || {}) {
   const candidates = [
     Number((payload || {}).updated_at_ts || 0),
@@ -1204,7 +1226,9 @@ function buildSummaryCardsHistorySvgModel(points, metricKey, width = 420, height
 
 function buildSummaryCardHistoryPopoverHtml(item) {
   const payload = state.summaryCardsHistoryPayload || {};
-  const currentCounts = computeSummaryCardCountsFromPivots(state.pivots);
+  const currentCounts = state.qualityOverridesReady
+    ? computeSummaryCardCountsFromPivots(state.pivots)
+    : state.lastStableSummaryCardCounts;
   const points = buildSummaryCardsDisplayHistoryPoints(payload.points, currentCounts, { payload });
   const source = text(payload.source, "live");
   const latestPoint = points.length ? points[points.length - 1] : null;
@@ -2848,7 +2872,15 @@ function renderHeader() {
 }
 
 function renderStatusSummary() {
-  const { stateCounts, qualityCounts } = computeSummaryCardCountsFromPivots(state.pivots);
+  const liveCounts = computeSummaryCardCountsFromPivots(state.pivots);
+  if (state.qualityOverridesReady) {
+    state.lastStableSummaryCardCounts = liveCounts;
+  }
+  const { stateCounts, qualityCounts } = (
+    state.qualityOverridesReady || !state.lastStableSummaryCardCounts
+      ? liveCounts
+      : state.lastStableSummaryCardCounts
+  );
   const settings = (state.rawState || {}).settings || {};
   const minSamplesRaw = Number(settings.cloudv2_min_samples ?? 5);
   const minSamples = Number.isFinite(minSamplesRaw) && minSamplesRaw >= 1 ? Math.round(minSamplesRaw) : 5;
@@ -4414,6 +4446,7 @@ async function refreshState(options = {}) {
       delete state.connectivityMiniSegmentsByPivotId[pivotId];
     }
   }
+  state.qualityOverridesReady = hasCompleteQualityOverridesForPivots(state.pivots);
   if (Array.isArray(state.visiblePivotIds) && state.visiblePivotIds.length) {
     state.visiblePivotIds = state.visiblePivotIds.filter((pivotId) => currentPivotIds.has(String(pivotId || "").trim()));
   }
@@ -4497,6 +4530,7 @@ async function refreshQualityOverrides(options = {}) {
     state.qualitySourceSignatureByPivotId = {};
     state.connectivitySummaryByPivotId = {};
     state.connectivityMiniSegmentsByPivotId = {};
+    state.qualityOverridesReady = true;
     state.qualityOverridesLastRefreshMs = Date.now();
     return;
   }
@@ -4523,7 +4557,10 @@ async function refreshQualityOverrides(options = {}) {
     });
   }
 
-  if (!pivotMetaById.size) return;
+  if (!pivotMetaById.size) {
+    state.qualityOverridesReady = hasCompleteQualityOverridesForPivots(pivots);
+    return;
+  }
 
   const duePeriodicRefresh =
     forceRefresh || (nowMs - Number(state.qualityOverridesLastRefreshMs || 0) >= refreshIntervalMs);
@@ -4563,6 +4600,7 @@ async function refreshQualityOverrides(options = {}) {
     if (duePeriodicRefresh) {
       state.qualityOverridesLastRefreshMs = nowMs;
     }
+    state.qualityOverridesReady = hasCompleteQualityOverridesForPivots(pivots);
     return;
   }
 
@@ -4627,6 +4665,12 @@ async function refreshQualityOverrides(options = {}) {
   state.qualitySourceSignatureByPivotId = nextSignatures;
   state.connectivitySummaryByPivotId = nextConnectivitySummaryByPivotId;
   state.connectivityMiniSegmentsByPivotId = nextConnectivityMiniSegmentsByPivotId;
+  state.qualityOverridesReady = hasCompleteQualityOverridesForPivots(pivots, {
+    qualityOverridesByPivotId: nextOverrides,
+    statusOverridesByPivotId: nextStatusOverrides,
+    connectivitySummaryByPivotId: nextConnectivitySummaryByPivotId,
+    connectivityMiniSegmentsByPivotId: nextConnectivityMiniSegmentsByPivotId,
+  });
   state.qualityOverridesLastRefreshMs = nowMs;
   if (!skipRender) {
     renderStatusSummary();
@@ -4680,8 +4724,13 @@ async function refreshInitialDashboardState() {
       await refreshState({ skipRender: true });
     }
   }
+  const supportPromise = Promise.allSettled([
+    refreshSummaryCardsHistory({ skipRender: true, force: true }),
+    refreshPivot({ skipRender: true }),
+  ]);
+  await refreshQualityOverrides({ skipRender: true, force: true });
   renderDashboardFromCurrentState();
-  void refreshDashboardSupportData({ forceQuality: true });
+  void supportPromise.then(() => renderDashboardFromCurrentState());
 }
 
 async function refreshAll(options = {}) {
@@ -4689,17 +4738,20 @@ async function refreshAll(options = {}) {
   if (state.refreshInFlight) return;
   state.refreshInFlight = true;
   try {
-    const stateResult = await refreshState({ skipRender: suppressInterimRender });
+    const stateResult = await refreshState({ skipRender: true });
     if (stateResult?.selectedRunChanged) {
-      await refreshState({ skipRender: suppressInterimRender });
+      await refreshState({ skipRender: true });
     }
     if (!state.pivots.length) {
       const resolved = await autoResolveRunIdFromBackend({ allowOverride: true });
       if (resolved) {
-        await refreshState({ skipRender: suppressInterimRender });
+        await refreshState({ skipRender: true });
       }
     }
-    renderDashboardFromCurrentState();
+    await refreshQualityOverrides({ skipRender: true, force: !state.qualityOverridesReady });
+    if (!suppressInterimRender) {
+      renderDashboardFromCurrentState();
+    }
     void refreshDashboardSupportData({ skipRender: suppressInterimRender });
     state.lastRefreshToastAtMs = 0;
   } catch (err) {
@@ -5979,6 +6031,7 @@ if (typeof module !== "undefined" && module.exports) {
       formatProbeConfiguredNetworks,
       normalizeSummaryCardsHistoryPoints,
       computeSummaryCardCountsFromPivots,
+      hasCompleteQualityOverridesForPivots,
       isRecentSummaryHistoryWarmupOutlier,
       buildSummaryCardsDisplayHistoryPoints,
       sampleSummaryCardsHistoryPoints,
