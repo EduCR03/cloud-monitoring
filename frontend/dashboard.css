@@ -1922,6 +1922,10 @@ a:focus {
   border-left-color: #d86814;
 }
 
+.event.cloudv2_scheduling {
+  border-left-color: #5d7d2b;
+}
+
 .event.probe_sent,
 .event.probe_response,
 .event.probe_timeout,

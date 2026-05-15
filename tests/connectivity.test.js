@@ -540,6 +540,7 @@ test("ui: painel de eventos separa limite por topico e mantem global", () => {
   assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "global").length, 125);
   assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "cloudv2").length, 125);
   assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "cloudv2-info").length, 125);
+  assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "cloudv2-scheduling").length, 0);
   assert.equal(_test.getConnectivityEventsPanelFiltered(pivot, "pivot").length, 20);
 });
 

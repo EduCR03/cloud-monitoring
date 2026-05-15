@@ -108,9 +108,15 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                     "#91-PivotA_1-error_reason$",
                     ts=1_773_171_011.0,
                 )
+                scheduling = store.process_message(
+                    "cloudv2-scheduling",
+                    "#93-PivotA_1-scheduling_payload$",
+                    ts=1_773_171_012.0,
+                )
 
                 self.assertTrue(shutdown["accepted"])
                 self.assertTrue(error["accepted"])
+                self.assertTrue(scheduling["accepted"])
 
                 snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_020.0)
                 events = snapshot["timeline"]
@@ -125,6 +131,13 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                     any(
                         item.get("topic") == "cloudv2-error"
                         and item.get("details", {}).get("raw_payload") == "#91-PivotA_1-error_reason$"
+                        for item in events
+                    )
+                )
+                self.assertTrue(
+                    any(
+                        item.get("topic") == "cloudv2-scheduling"
+                        and item.get("details", {}).get("raw_payload") == "#93-PivotA_1-scheduling_payload$"
                         for item in events
                     )
                 )

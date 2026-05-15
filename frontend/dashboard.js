@@ -269,6 +269,7 @@ const CONNECTIVITY_EVENT_TOPIC_FILTERS = [
   { key: "cloudv2-info", label: "cloudv2-info" },
   { key: "cloudv2-shutdown", label: "cloudv2-shutdown" },
   { key: "cloudv2-error", label: "cloudv2-error" },
+  { key: "cloudv2-scheduling", label: "cloudv2-scheduling" },
   { key: "pivot", label: "Pivot_id" },
 ];
 const CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS = new Set(
