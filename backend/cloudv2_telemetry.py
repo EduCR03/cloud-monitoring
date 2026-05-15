@@ -323,6 +323,10 @@ def parse_network_config_payload(parsed):
 
 
 def _parse_config_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
     text = _normalize_text(value).lower()
     if text in ("1", "true", "sim", "yes", "on"):
         return True

@@ -267,6 +267,10 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 self.assertEqual(parsed_config["end_time_hhmm"], "1830")
                 self.assertTrue(parsed_config["enabled"])
 
+                parsed_disabled, error = parse_device_payload("#04-PivotA_1-0000-0000-0$")
+                self.assertIsNone(error)
+                self.assertFalse(parse_rush_config_payload(parsed_disabled)["enabled"])
+
                 unsolicited = store.process_message(
                     "cloudv2-config",
                     "#04-PivotA_1-0800-1830-1$",
