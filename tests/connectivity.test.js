@@ -553,6 +553,27 @@ test("ui: payload do topico dinamico usa details.payload como fallback", () => {
   );
 });
 
+test("ui: exportacao txt usa horario do backend e payload completo do topico", () => {
+  const pivot = {
+    pivot_id: "ODAgua_1",
+    timeline: [
+      {
+        ts: 1_778_461_203,
+        topic: "cloudv2",
+        details: {
+          source_topic: "cloudv2",
+          raw_payload: "#00-ODAgua_1-852-00-94-239-10/05/2026_21:59:58$",
+        },
+      },
+    ],
+  };
+
+  assert.equal(
+    _test.buildConnectivityEventsTxt(pivot, "cloudv2"),
+    "10-05-2026 22:00:03 -> #00-ODAgua_1-852-00-94-239-10/05/2026_21:59:58$"
+  );
+});
+
 test("ui: firmware para reset usa summary do painel e fallback da tabela", () => {
   assert.equal(
     _test.getPivotFirmwareVersionForReset({ summary: { last_cloud2: { firmware: "2.8.5" } } }),

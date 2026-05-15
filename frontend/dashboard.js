@@ -161,6 +161,7 @@ const ui = HAS_DOM
       timelineNext: document.getElementById("timelineNext"),
       timelinePageInfo: document.getElementById("timelinePageInfo"),
       timelineTopicSelect: document.getElementById("timelineTopicSelect"),
+      timelineDownloadTxt: document.getElementById("timelineDownloadTxt"),
       cloud2Table: document.getElementById("cloud2Table"),
       toastRegion: document.getElementById("toastRegion"),
       sessionHint: document.getElementById("sessionHint"),
@@ -722,6 +723,21 @@ function formatTimestampFromTsOrValue(tsSec, value, compact = false) {
     return compact ? formatCompactDateTime(ts) : formatShortDateTime(ts);
   }
   return text(value, "-");
+}
+
+function formatConnectivityEventTxtTimestamp(event) {
+  const formatted = formatTimestampFromTsOrValue((event || {}).ts, (event || {}).at, true);
+  const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(formatted);
+  if (match) return `${match[3]}-${match[2]}-${match[1]} ${match[4]}`;
+  return formatted;
+}
+
+function sanitizeDownloadFilenamePart(value) {
+  return text(value, "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    || "eventos";
 }
 
 function formatDateTimeValue(value) {
@@ -3330,6 +3346,34 @@ function getConnectivityEventsPanelCapped(pivot) {
   return getConnectivityEventsPanelFiltered(pivot, "global");
 }
 
+function buildConnectivityEventsTxt(pivot, filterKey) {
+  const events = getConnectivityEventsPanelFiltered(pivot, filterKey);
+  return events
+    .map((event) => {
+      const timestamp = formatConnectivityEventTxtTimestamp(event);
+      const payload = resolveConnectivityEventRawPayload(event) || "Payload nao disponivel para este evento.";
+      return `${timestamp} -> ${payload}`;
+    })
+    .join("\n");
+}
+
+function downloadConnectivityEventsTxt(pivot, filterKey) {
+  if (!HAS_DOM || !HAS_WINDOW) return false;
+  const safePivotId = sanitizeDownloadFilenamePart((pivot || {}).pivot_id || "pivot");
+  const safeTopic = sanitizeDownloadFilenamePart(normalizeConnectivityEventTopicFilter(filterKey));
+  const content = buildConnectivityEventsTxt(pivot, filterKey);
+  const blob = new Blob([content ? `${content}\n` : ""], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${safePivotId}_${safeTopic}_eventos.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 function normalizeRange(pivot) {
   const nowTs = resolveTimelineReferenceNowTs(pivot);
   const timeline = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
@@ -4257,6 +4301,12 @@ function renderTimeline(pivot) {
   setTimelinePageForFilter(activeFilter, activePage);
   const start = (activePage - 1) * state.timelinePageSize;
   const pageEvents = allEvents.slice(start, start + state.timelinePageSize);
+  if (ui.timelineDownloadTxt) {
+    ui.timelineDownloadTxt.disabled = allEvents.length <= 0;
+    ui.timelineDownloadTxt.title = allEvents.length
+      ? "Baixar os eventos das 5 paginas deste topico"
+      : "Nenhum evento para baixar";
+  }
 
   if (!pageEvents.length) {
     ui.timelineList.innerHTML = `<div class="empty">Nenhum evento disponível para este período.</div>`;
@@ -5982,6 +6032,12 @@ function wireEvents() {
       renderPivotView();
     });
   }
+  if (ui.timelineDownloadTxt) {
+    ui.timelineDownloadTxt.addEventListener("click", () => {
+      const filterKey = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
+      downloadConnectivityEventsTxt(state.pivotData || {}, filterKey);
+    });
+  }
 
   window.addEventListener("hashchange", () => {
     const hashPivot = parseHashPivot();
@@ -6093,6 +6149,7 @@ if (typeof module !== "undefined" && module.exports) {
       buildConnectivityStatus,
       computeConnectivityFromRange,
       getConnectivityEventsPanelFiltered,
+      buildConnectivityEventsTxt,
       resolveConnectivityEventRawPayload,
       normalizePivotIdList,
       parsePivotIdBatchInput,
