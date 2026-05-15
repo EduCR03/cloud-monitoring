@@ -17,6 +17,7 @@ FIXED_MONITOR_TOPICS = [
     "cloudv2-shutdown",
     "cloudv2-error",
     "cloudv2-scheduling",
+    "cloudv2-config",
 ]
 
 PROBE_RESPONSE_TOPICS = ["cloudv2-network", "cloudv2-info"]

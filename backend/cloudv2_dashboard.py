@@ -1436,6 +1436,30 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                 self._write_json(200, {"ok": True, "reset_command": result})
                 return
 
+            if path == "/api/pivot-config-request":
+                try:
+                    body = self._read_json_body()
+                except json.JSONDecodeError:
+                    self._write_json(400, {"error": "json invalido"})
+                    return
+
+                pivot_id = str(body.get("pivot_id", "")).strip()
+                if not pivot_id:
+                    self._write_json(400, {"error": "pivot_id obrigatorio"})
+                    return
+
+                try:
+                    result = telemetry_store.send_pivot_config_request(pivot_id)
+                except ValueError as exc:
+                    self._write_json(400, {"error": str(exc)})
+                    return
+                except RuntimeError as exc:
+                    self._write_json(503, {"error": str(exc)})
+                    return
+
+                self._write_json(200, {"ok": True, "request": result})
+                return
+
             if path != "/api/probe-config":
                 self._write_json(404, {"error": "rota nao encontrada"})
                 return

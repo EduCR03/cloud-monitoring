@@ -170,6 +170,14 @@ const ui = HAS_DOM
       initialLoadingText: document.getElementById("initialLoadingText"),
       settingsModal: document.getElementById("settingsModal"),
       settingsModalClose: document.getElementById("settingsModalClose"),
+      requestPivotConfigBtn: document.getElementById("requestPivotConfigBtn"),
+      pivotConfigHint: document.getElementById("pivotConfigHint"),
+      pivotConfigContactor: document.getElementById("pivotConfigContactor"),
+      pivotConfigPressure: document.getElementById("pivotConfigPressure"),
+      pivotConfigPressurizationTime: document.getElementById("pivotConfigPressurizationTime"),
+      pivotConfigOnTime: document.getElementById("pivotConfigOnTime"),
+      pivotConfigOffTime: document.getElementById("pivotConfigOffTime"),
+      pivotConfigReadTime: document.getElementById("pivotConfigReadTime"),
     }
   : {};
 
@@ -253,6 +261,7 @@ const state = {
   pivotTablePreferenceLoaded: false,
   pendingModemResetAcks: {},
   bulkPivotActionInFlight: false,
+  pivotConfigRequestInFlight: false,
 };
 
 const API_REQUEST_TIMEOUT_MS = 20000;
@@ -3378,8 +3387,52 @@ function downloadConnectivityEventsTxt(pivot, filterKey) {
   return true;
 }
 
+function getSelectedPivotConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.pivot_config === "object" ? summary.pivot_config : {};
+  return config || {};
+}
+
+function setPivotConfigField(element, value) {
+  if (!element) return;
+  element.value = value === null || value === undefined || value === "" ? "-" : String(value);
+}
+
+function renderPivotConfigModal() {
+  const pivotId = String(state.selectedPivot || "").trim();
+  const config = getSelectedPivotConfig();
+  setPivotConfigField(ui.pivotConfigContactor, config.contactor);
+  setPivotConfigField(ui.pivotConfigPressure, config.pressure);
+  setPivotConfigField(ui.pivotConfigPressurizationTime, config.pressurization_time);
+  setPivotConfigField(ui.pivotConfigOnTime, config.on_time);
+  setPivotConfigField(ui.pivotConfigOffTime, config.off_time);
+  setPivotConfigField(ui.pivotConfigReadTime, config.read_time);
+
+  if (ui.pivotConfigHint) {
+    const lastResponse = formatTimestampFromTsOrValue(config.last_response_ts, config.last_response_at);
+    const lastRequest = formatTimestampFromTsOrValue(config.last_request_ts, config.last_request_at);
+    if (!pivotId) {
+      ui.pivotConfigHint.textContent = "Abra a visão de um pivô para pedir configuração.";
+    } else if (config.pending) {
+      ui.pivotConfigHint.textContent = lastRequest && lastRequest !== "-"
+        ? `Pedido enviado em ${lastRequest}. Aguardando resposta.`
+        : "Pedido enviado. Aguardando resposta.";
+    } else if (lastResponse && lastResponse !== "-") {
+      ui.pivotConfigHint.textContent = `Última resposta recebida em ${lastResponse}.`;
+    } else {
+      ui.pivotConfigHint.textContent = "Peça a configuração para preencher os campos.";
+    }
+  }
+
+  if (ui.requestPivotConfigBtn) {
+    ui.requestPivotConfigBtn.disabled = !pivotId || state.pivotConfigRequestInFlight;
+    ui.requestPivotConfigBtn.textContent = state.pivotConfigRequestInFlight ? "Pedindo..." : "Pedir configuração";
+  }
+}
+
 function openSettingsModal() {
   if (!ui.settingsModal) return;
+  renderPivotConfigModal();
   ui.settingsModal.hidden = false;
   ui.settingsModalClose?.focus();
 }
@@ -4387,6 +4440,7 @@ function renderPivotView() {
     syncPivotDeleteControl();
     syncPivotTechnologyControl();
     clearConnectivitySegmentSelection();
+    renderPivotConfigModal();
     return;
   }
 
@@ -4466,6 +4520,7 @@ function renderPivotView() {
   renderRssiChart(pivot);
   renderTimeline(pivot);
   renderCloud2Table(pivot);
+  renderPivotConfigModal();
 }
 
 async function loadUiConfig() {
@@ -5283,6 +5338,33 @@ async function resetSelectedPivotModem() {
   }
 }
 
+async function requestSelectedPivotConfig() {
+  const pivotId = String(state.selectedPivot || "").trim();
+  if (!pivotId || state.pivotConfigRequestInFlight) return;
+
+  state.pivotConfigRequestInFlight = true;
+  renderPivotConfigModal();
+  try {
+    const response = await fetch(buildApiUrl("/api/pivot-config-request"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ pivot_id: pivotId }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || data.message || `HTTP ${response.status}`);
+    }
+    showToast("Pedido de configuração enviado.", "success", 3200);
+    await refreshPivot();
+  } catch (err) {
+    showToast("Não foi possível pedir a configuração.", "error", 4200);
+  } finally {
+    state.pivotConfigRequestInFlight = false;
+    renderPivotConfigModal();
+  }
+}
+
 async function deleteSelectedPivot() {
   if (!canCurrentUserDeletePivots()) {
     syncPivotDeleteControl();
@@ -5936,6 +6018,9 @@ function wireEvents() {
   }
   if (ui.settingsModalClose) {
     ui.settingsModalClose.addEventListener("click", closeSettingsModal);
+  }
+  if (ui.requestPivotConfigBtn) {
+    ui.requestPivotConfigBtn.addEventListener("click", requestSelectedPivotConfig);
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {

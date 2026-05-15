@@ -205,6 +205,10 @@ def _publish_probe_to_dynamic_topic(pivot_topic, payload):
     return _publish_payload_to_dynamic_topic(pivot_topic, payload, label="probe")
 
 
+def _publish_pivot_config_request_to_dynamic_topic(pivot_topic, payload):
+    return _publish_payload_to_dynamic_topic(pivot_topic, payload, label="configuracao idp 03")
+
+
 def _publish_modem_reset_to_dynamic_topic(pivot_topic, payload):
     topic = str(pivot_topic or "").strip()
     if not topic:
@@ -358,6 +362,7 @@ def main():
     telemetry = TelemetryStore(runtime_config, log_dir=LOG_DIR)
     telemetry.set_probe_sender(_publish_probe_to_dynamic_topic)
     telemetry.set_modem_reset_sender(_publish_modem_reset_to_dynamic_topic)
+    telemetry.set_pivot_config_sender(_publish_pivot_config_request_to_dynamic_topic)
     telemetry.start()
 
     if DASHBOARD_ENABLED:

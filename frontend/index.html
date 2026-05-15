@@ -485,6 +485,41 @@
         <h2 id="settingsModalTitle">Configurações</h2>
         <button id="settingsModalClose" class="ghost icon-close" type="button" aria-label="Fechar configurações">×</button>
       </div>
+      <div class="settings-modal-body">
+        <div class="settings-section-head">
+          <div>
+            <h3>Configuração do pivô</h3>
+            <p id="pivotConfigHint">Peça a configuração para preencher os campos.</p>
+          </div>
+          <button id="requestPivotConfigBtn" class="primary" type="button">Pedir configuração</button>
+        </div>
+        <div class="pivot-config-grid" aria-label="Campos de configuração do pivô">
+          <label>
+            <span>Contator</span>
+            <input id="pivotConfigContactor" type="text" readonly value="-"/>
+          </label>
+          <label>
+            <span>Pressão</span>
+            <input id="pivotConfigPressure" type="text" readonly value="-"/>
+          </label>
+          <label>
+            <span>Tempo de pressurização</span>
+            <input id="pivotConfigPressurizationTime" type="text" readonly value="-"/>
+          </label>
+          <label>
+            <span>Tempo ligado</span>
+            <input id="pivotConfigOnTime" type="text" readonly value="-"/>
+          </label>
+          <label>
+            <span>Tempo desligado</span>
+            <input id="pivotConfigOffTime" type="text" readonly value="-"/>
+          </label>
+          <label>
+            <span>Tempo de leitura</span>
+            <input id="pivotConfigReadTime" type="text" readonly value="-"/>
+          </label>
+        </div>
+      </div>
     </section>
   </div>
 

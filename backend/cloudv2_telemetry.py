@@ -23,6 +23,7 @@ TOPIC_INFO = "cloudv2-info"
 TOPIC_SHUTDOWN = "cloudv2-shutdown"
 TOPIC_ERROR = "cloudv2-error"
 TOPIC_SCHEDULING = "cloudv2-scheduling"
+TOPIC_CONFIG = "cloudv2-config"
 EVENT_ONLY_TOPICS = (TOPIC_SHUTDOWN, TOPIC_ERROR, TOPIC_SCHEDULING)
 MONITOR_TOPICS = (
     TOPIC_CLOUDV2,
@@ -33,6 +34,7 @@ MONITOR_TOPICS = (
     TOPIC_SHUTDOWN,
     TOPIC_ERROR,
     TOPIC_SCHEDULING,
+    TOPIC_CONFIG,
 )
 PROBE_RESPONSE_TOPICS = {TOPIC_NETWORK, TOPIC_INFO}
 CONNECTIVITY_TOPICS = (TOPIC_CLOUDV2, TOPIC_PING, TOPIC_INFO, TOPIC_NETWORK)
@@ -278,6 +280,70 @@ def parse_ping_rssi(parsed):
     return rssi_value
 
 
+def parse_pivot_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("3", "03"):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 8:
+        return None
+
+    return {
+        "contactor": _normalize_text(parts[2]),
+        "pressure": _normalize_text(parts[3]),
+        "pressurization_time": _safe_int(parts[4], None),
+        "on_time": _safe_int(parts[5], None),
+        "off_time": _safe_int(parts[6], None),
+        "read_time": _safe_int(parts[7], None),
+    }
+
+
+PIVOT_CONFIG_VALUE_KEYS = (
+    "contactor",
+    "pressure",
+    "pressurization_time",
+    "on_time",
+    "off_time",
+    "read_time",
+)
+
+
+def _new_pivot_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in PIVOT_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _normalize_pivot_config_state(value):
+    normalized = _new_pivot_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["contactor"] = _normalize_text(value.get("contactor")) or None
+    normalized["pressure"] = _normalize_text(value.get("pressure")) or None
+    for key in ("pressurization_time", "on_time", "off_time", "read_time"):
+        normalized[key] = _safe_int(value.get(key), None)
+    return normalized
+
+
 def _parse_version_triplet(value):
     raw = _normalize_text(value).lower()
     if not raw:
@@ -457,6 +523,7 @@ class TelemetryStore:
         self._event_seq = 0
         self._probe_sender = None
         self._modem_reset_sender = None
+        self._pivot_config_sender = None
         self._api_cache_generation = 0
         self._state_snapshot_cache = {}
         self._quality_cards_cache = {}
@@ -720,6 +787,9 @@ class TelemetryStore:
     def set_modem_reset_sender(self, sender_fn):
         self._modem_reset_sender = sender_fn
 
+    def set_pivot_config_sender(self, sender_fn):
+        self._pivot_config_sender = sender_fn
+
     def _api_cache_key(self, run_id):
         normalized_run = str(run_id or "").strip()
         return normalized_run or "__default__"
@@ -875,6 +945,8 @@ class TelemetryStore:
                     self._record_cloud2_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
                 elif topic in PROBE_RESPONSE_TOPICS:
                     self._record_probe_response_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
+                elif topic == TOPIC_CONFIG:
+                    self._record_pivot_config_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
                 elif topic in EVENT_ONLY_TOPICS:
                     self._record_generic_topic_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
 
@@ -1873,6 +1945,7 @@ class TelemetryStore:
         pivot["cloud2_events"] = cloud2_events
         pivot["ping_rssi_points"] = rssi_series
         pivot["drop_events"] = self._build_drop_events_from_cloud2_locked(cloud2_events)
+        pivot["pivot_config"] = _normalize_pivot_config_state(summary.get("pivot_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2523,6 +2596,59 @@ class TelemetryStore:
             "command_at": _ts_to_str(command_ts),
         }
 
+    def send_pivot_config_request(self, pivot_id):
+        normalized_pivot = str(pivot_id or "").strip()
+        if not normalized_pivot:
+            raise ValueError("pivot_id obrigatorio")
+        if not validate_pivot_id(normalized_pivot):
+            raise ValueError("pivot_id invalido")
+
+        sender = self._pivot_config_sender
+        if sender is None:
+            raise RuntimeError("envio de configuracao nao configurado")
+
+        with self._lock:
+            pivot = self.pivots.get(normalized_pivot)
+            if pivot is None:
+                raise ValueError("pivot nao encontrado")
+
+        payload = f"#03-{normalized_pivot}$"
+        request_ts = time.time()
+        sent_ok = bool(sender(normalized_pivot, payload))
+        if not sent_ok:
+            raise RuntimeError("falha ao pedir configuracao")
+
+        with self._lock:
+            pivot = self.pivots.get(normalized_pivot)
+            if pivot is not None:
+                pivot_config = _normalize_pivot_config_state(pivot.get("pivot_config"))
+                pivot_config["last_request_ts"] = request_ts
+                pivot_config["last_request_topic"] = normalized_pivot
+                pivot_config["last_request_payload"] = payload
+                pivot["pivot_config"] = pivot_config
+                self._record_timeline_locked(
+                    pivot,
+                    event_type="pivot_config_request",
+                    topic=normalized_pivot,
+                    ts=request_ts,
+                    summary="Solicitacao de configuracao IDP 03 enviada.",
+                    details={"payload": payload},
+                    source_topic=normalized_pivot,
+                    raw_payload=payload,
+                )
+                self._persist_pivot_snapshot_locked(pivot, request_ts)
+                self._dirty = True
+                self._invalidate_api_caches_locked()
+
+        self.log.info("Solicitacao #03-pivot_id$ enviada para pivot_id=%s", normalized_pivot)
+        return {
+            "pivot_id": normalized_pivot,
+            "topic": normalized_pivot,
+            "payload": payload,
+            "request_ts": request_ts,
+            "request_at": _ts_to_str(request_ts),
+        }
+
     def _background_loop(self):
         while not self._stop_event.is_set():
             now = time.time()
@@ -2701,6 +2827,7 @@ class TelemetryStore:
                 "command_count": 0,
                 "ack_count": 0,
             },
+            "pivot_config": _new_pivot_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -2765,6 +2892,7 @@ class TelemetryStore:
 
         baseline_last_cloud2 = summary.get("last_cloud2")
         current_last_cloud2 = pivot.get("last_cloud2")
+        baseline_last_cloud2_ts = None
         if (not isinstance(current_last_cloud2, dict) or not current_last_cloud2) and isinstance(
             baseline_last_cloud2, dict
         ) and baseline_last_cloud2:
@@ -2772,6 +2900,11 @@ class TelemetryStore:
             baseline_last_cloud2_ts = _safe_float(baseline_last_cloud2.get("ts"), None)
             if baseline_last_cloud2_ts is not None:
                 pivot["last_cloud2_ts"] = baseline_last_cloud2_ts
+            changed = True
+
+        baseline_pivot_config = summary.get("pivot_config")
+        if isinstance(baseline_pivot_config, dict) and baseline_pivot_config:
+            pivot["pivot_config"] = _normalize_pivot_config_state(baseline_pivot_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -3191,6 +3324,62 @@ class TelemetryStore:
             raw_payload=raw_payload,
             parsed_payload=parsed,
         )
+
+    def _record_pivot_config_locked(self, pivot, parsed, topic, ts, raw_payload=None):
+        normalized_topic = str(topic or "").strip()
+        parsed_config = parse_pivot_config_payload(parsed)
+        pivot_config = _normalize_pivot_config_state(pivot.get("pivot_config"))
+        pivot["pivot_config"] = pivot_config
+
+        if parsed_config is None:
+            self._record_generic_topic_locked(pivot, parsed, normalized_topic, ts, raw_payload=raw_payload)
+            return False
+
+        last_request_ts = _safe_float(pivot_config.get("last_request_ts"), None)
+        last_response_ts = _safe_float(pivot_config.get("last_response_ts"), None)
+        request_pending = last_request_ts is not None and (
+            last_response_ts is None or last_response_ts < last_request_ts
+        )
+        if not request_pending or ts < last_request_ts:
+            self._record_timeline_locked(
+                pivot,
+                event_type="pivot_config_unrequested",
+                topic=normalized_topic,
+                ts=ts,
+                summary="Configuracao IDP 03 recebida sem solicitacao ativa.",
+                details={
+                    "idp": parsed.get("idp"),
+                    "field_count": len(parsed.get("parts", [])),
+                    "ignored_for_modal": True,
+                },
+                source_topic=normalized_topic,
+                raw_payload=raw_payload,
+                parsed_payload=parsed,
+            )
+            return False
+
+        pivot_config.update(parsed_config)
+        pivot_config["last_response_ts"] = ts
+        pivot_config["last_response_topic"] = normalized_topic
+        pivot_config["last_response_payload"] = str(raw_payload or parsed.get("raw") or "").strip() or None
+        pivot["pivot_config"] = pivot_config
+
+        self._record_timeline_locked(
+            pivot,
+            event_type="pivot_config_response",
+            topic=normalized_topic,
+            ts=ts,
+            summary="Configuracao IDP 03 recebida.",
+            details={
+                "idp": parsed.get("idp"),
+                "field_count": len(parsed.get("parts", [])),
+                "config": dict(parsed_config),
+            },
+            source_topic=normalized_topic,
+            raw_payload=raw_payload,
+            parsed_payload=parsed,
+        )
+        return True
 
     def _record_probe_response_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         probe = pivot["probe"]
@@ -4201,6 +4390,15 @@ class TelemetryStore:
             disconnect_threshold_sec=status["disconnect_threshold_sec"],
             window_sec=TIMELINE_MINI_WINDOW_SEC,
         )
+        pivot_config = _normalize_pivot_config_state(pivot.get("pivot_config"))
+        pivot_config_summary = dict(pivot_config)
+        pivot_config_summary["last_request_at"] = _ts_to_str(pivot_config.get("last_request_ts"))
+        pivot_config_summary["last_response_at"] = _ts_to_str(pivot_config.get("last_response_ts"))
+        last_request_ts = _safe_float(pivot_config.get("last_request_ts"), None)
+        last_response_ts = _safe_float(pivot_config.get("last_response_ts"), None)
+        pivot_config_summary["pending"] = last_request_ts is not None and (
+            last_response_ts is None or last_response_ts < last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -4299,6 +4497,7 @@ class TelemetryStore:
                 "command_count": int(modem_reset.get("command_count") or 0),
                 "ack_count": int(modem_reset.get("ack_count") or 0),
             },
+            "pivot_config": pivot_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):

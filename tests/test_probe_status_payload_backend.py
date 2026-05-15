@@ -5,7 +5,12 @@ from unittest.mock import patch
 
 import backend.cloudv2_telemetry as telemetry_mod
 from backend.cloudv2_persistence import TelemetryPersistence
-from backend.cloudv2_telemetry import TelemetryStore, parse_device_payload, parse_probe_status_payload
+from backend.cloudv2_telemetry import (
+    TelemetryStore,
+    parse_device_payload,
+    parse_pivot_config_payload,
+    parse_probe_status_payload,
+)
 
 
 class ProbeStatusPayloadTests(unittest.TestCase):
@@ -141,6 +146,63 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                         for item in events
                     )
                 )
+            finally:
+                store.stop()
+
+    def test_pivot_config_response_requires_prior_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                parsed, error = parse_device_payload("#03-PivotA_1-K1-P1-120-10-20-30$")
+                self.assertIsNone(error)
+                parsed_config = parse_pivot_config_payload(parsed)
+                self.assertEqual(parsed_config["contactor"], "K1")
+                self.assertEqual(parsed_config["pressurization_time"], 120)
+
+                unsolicited = store.process_message(
+                    "cloudv2-config",
+                    "#03-PivotA_1-K1-P1-120-10-20-30$",
+                    ts=1_773_171_010.0,
+                )
+                self.assertTrue(unsolicited["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_011.0)
+                self.assertIsNone(snapshot["summary"]["pivot_config"]["contactor"])
+
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+                request = store.send_pivot_config_request("PivotA_1")
+                self.assertEqual(request["payload"], "#03-PivotA_1$")
+                self.assertEqual(sent_messages, [("PivotA_1", "#03-PivotA_1$")])
+
+                response = store.process_message(
+                    "cloudv2-config",
+                    "#03-PivotA_1-K1-P1-120-10-20-30$",
+                    ts=request["request_ts"] + 1,
+                )
+                self.assertTrue(response["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=request["request_ts"] + 2)
+                config = snapshot["summary"]["pivot_config"]
+                self.assertEqual(config["contactor"], "K1")
+                self.assertEqual(config["pressure"], "P1")
+                self.assertEqual(config["pressurization_time"], 120)
+                self.assertEqual(config["on_time"], 10)
+                self.assertEqual(config["off_time"], 20)
+                self.assertEqual(config["read_time"], 30)
+                self.assertFalse(config["pending"])
+
+                late_unrequested = store.process_message(
+                    "cloudv2-config",
+                    "#03-PivotA_1-K2-P2-240-11-21-31$",
+                    ts=request["request_ts"] + 2,
+                )
+                self.assertTrue(late_unrequested["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=request["request_ts"] + 3)
+                config = snapshot["summary"]["pivot_config"]
+                self.assertEqual(config["contactor"], "K1")
+                self.assertEqual(config["pressure"], "P1")
             finally:
                 store.stop()
 
