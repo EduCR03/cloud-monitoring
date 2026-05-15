@@ -302,6 +302,26 @@ def parse_pivot_config_payload(parsed):
     }
 
 
+def parse_network_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("2", "02"):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 6:
+        return None
+
+    return {
+        "gprs_id": _normalize_text(parts[2]),
+        "modem_apn": _normalize_text(parts[3]),
+        "wifi_ssid": _normalize_text(parts[4]),
+        "wifi_pass": _normalize_text(parts[5]),
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -310,6 +330,7 @@ PIVOT_CONFIG_VALUE_KEYS = (
     "off_time",
     "read_time",
 )
+NETWORK_CONFIG_VALUE_KEYS = ("gprs_id", "modem_apn", "wifi_ssid", "wifi_pass")
 
 
 def _new_pivot_config_state():
@@ -322,6 +343,20 @@ def _new_pivot_config_state():
         "last_response_payload": None,
     }
     for key in PIVOT_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _new_network_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in NETWORK_CONFIG_VALUE_KEYS:
         state[key] = None
     return state
 
@@ -341,6 +376,22 @@ def _normalize_pivot_config_state(value):
     normalized["pressure"] = _normalize_text(value.get("pressure")) or None
     for key in ("pressurization_time", "on_time", "off_time", "read_time"):
         normalized[key] = _safe_int(value.get(key), None)
+    return normalized
+
+
+def _normalize_network_config_state(value):
+    normalized = _new_network_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    for key in NETWORK_CONFIG_VALUE_KEYS:
+        normalized[key] = _normalize_text(value.get(key)) or None
     return normalized
 
 
@@ -1946,6 +1997,7 @@ class TelemetryStore:
         pivot["ping_rssi_points"] = rssi_series
         pivot["drop_events"] = self._build_drop_events_from_cloud2_locked(cloud2_events)
         pivot["pivot_config"] = _normalize_pivot_config_state(summary.get("pivot_config"))
+        pivot["network_config"] = _normalize_network_config_state(summary.get("network_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2597,11 +2649,17 @@ class TelemetryStore:
         }
 
     def send_pivot_config_request(self, pivot_id):
+        return self.send_config_request(pivot_id, idp="03")
+
+    def send_config_request(self, pivot_id, idp="03"):
         normalized_pivot = str(pivot_id or "").strip()
         if not normalized_pivot:
             raise ValueError("pivot_id obrigatorio")
         if not validate_pivot_id(normalized_pivot):
             raise ValueError("pivot_id invalido")
+        normalized_idp = str(idp or "").strip().zfill(2)
+        if normalized_idp not in ("02", "03"):
+            raise ValueError("idp de configuracao nao suportado")
 
         sender = self._pivot_config_sender
         if sender is None:
@@ -2612,7 +2670,7 @@ class TelemetryStore:
             if pivot is None:
                 raise ValueError("pivot nao encontrado")
 
-        payload = f"#03-{normalized_pivot}$"
+        payload = f"#{normalized_idp}-{normalized_pivot}$"
         request_ts = time.time()
         sent_ok = bool(sender(normalized_pivot, payload))
         if not sent_ok:
@@ -2621,18 +2679,20 @@ class TelemetryStore:
         with self._lock:
             pivot = self.pivots.get(normalized_pivot)
             if pivot is not None:
-                pivot_config = _normalize_pivot_config_state(pivot.get("pivot_config"))
-                pivot_config["last_request_ts"] = request_ts
-                pivot_config["last_request_topic"] = normalized_pivot
-                pivot_config["last_request_payload"] = payload
-                pivot["pivot_config"] = pivot_config
+                state_key = "network_config" if normalized_idp == "02" else "pivot_config"
+                normalizer = _normalize_network_config_state if normalized_idp == "02" else _normalize_pivot_config_state
+                config_state = normalizer(pivot.get(state_key))
+                config_state["last_request_ts"] = request_ts
+                config_state["last_request_topic"] = normalized_pivot
+                config_state["last_request_payload"] = payload
+                pivot[state_key] = config_state
                 self._record_timeline_locked(
                     pivot,
                     event_type="pivot_config_request",
                     topic=normalized_pivot,
                     ts=request_ts,
-                    summary="Solicitacao de configuracao IDP 03 enviada.",
-                    details={"payload": payload},
+                    summary=f"Solicitacao de configuracao IDP {normalized_idp} enviada.",
+                    details={"payload": payload, "idp": normalized_idp},
                     source_topic=normalized_pivot,
                     raw_payload=payload,
                 )
@@ -2640,11 +2700,12 @@ class TelemetryStore:
                 self._dirty = True
                 self._invalidate_api_caches_locked()
 
-        self.log.info("Solicitacao #03-pivot_id$ enviada para pivot_id=%s", normalized_pivot)
+        self.log.info("Solicitacao #%s-pivot_id$ enviada para pivot_id=%s", normalized_idp, normalized_pivot)
         return {
             "pivot_id": normalized_pivot,
             "topic": normalized_pivot,
             "payload": payload,
+            "idp": normalized_idp,
             "request_ts": request_ts,
             "request_at": _ts_to_str(request_ts),
         }
@@ -2828,6 +2889,7 @@ class TelemetryStore:
                 "ack_count": 0,
             },
             "pivot_config": _new_pivot_config_state(),
+            "network_config": _new_network_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -2905,6 +2967,11 @@ class TelemetryStore:
         baseline_pivot_config = summary.get("pivot_config")
         if isinstance(baseline_pivot_config, dict) and baseline_pivot_config:
             pivot["pivot_config"] = _normalize_pivot_config_state(baseline_pivot_config)
+            changed = True
+
+        baseline_network_config = summary.get("network_config")
+        if isinstance(baseline_network_config, dict) and baseline_network_config:
+            pivot["network_config"] = _normalize_network_config_state(baseline_network_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -3327,16 +3394,24 @@ class TelemetryStore:
 
     def _record_pivot_config_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         normalized_topic = str(topic or "").strip()
-        parsed_config = parse_pivot_config_payload(parsed)
-        pivot_config = _normalize_pivot_config_state(pivot.get("pivot_config"))
-        pivot["pivot_config"] = pivot_config
+        raw_idp = str((parsed or {}).get("idp") or "").strip().zfill(2)
+        if raw_idp == "02":
+            parsed_config = parse_network_config_payload(parsed)
+            state_key = "network_config"
+            normalizer = _normalize_network_config_state
+        else:
+            parsed_config = parse_pivot_config_payload(parsed)
+            state_key = "pivot_config"
+            normalizer = _normalize_pivot_config_state
+        config_state = normalizer(pivot.get(state_key))
+        pivot[state_key] = config_state
 
         if parsed_config is None:
             self._record_generic_topic_locked(pivot, parsed, normalized_topic, ts, raw_payload=raw_payload)
             return False
 
-        last_request_ts = _safe_float(pivot_config.get("last_request_ts"), None)
-        last_response_ts = _safe_float(pivot_config.get("last_response_ts"), None)
+        last_request_ts = _safe_float(config_state.get("last_request_ts"), None)
+        last_response_ts = _safe_float(config_state.get("last_response_ts"), None)
         request_pending = last_request_ts is not None and (
             last_response_ts is None or last_response_ts < last_request_ts
         )
@@ -3346,9 +3421,9 @@ class TelemetryStore:
                 event_type="pivot_config_unrequested",
                 topic=normalized_topic,
                 ts=ts,
-                summary="Configuracao IDP 03 recebida sem solicitacao ativa.",
+                summary=f"Configuracao IDP {raw_idp} recebida sem solicitacao ativa.",
                 details={
-                    "idp": parsed.get("idp"),
+                    "idp": raw_idp,
                     "field_count": len(parsed.get("parts", [])),
                     "ignored_for_modal": True,
                 },
@@ -3358,20 +3433,20 @@ class TelemetryStore:
             )
             return False
 
-        pivot_config.update(parsed_config)
-        pivot_config["last_response_ts"] = ts
-        pivot_config["last_response_topic"] = normalized_topic
-        pivot_config["last_response_payload"] = str(raw_payload or parsed.get("raw") or "").strip() or None
-        pivot["pivot_config"] = pivot_config
+        config_state.update(parsed_config)
+        config_state["last_response_ts"] = ts
+        config_state["last_response_topic"] = normalized_topic
+        config_state["last_response_payload"] = str(raw_payload or parsed.get("raw") or "").strip() or None
+        pivot[state_key] = config_state
 
         self._record_timeline_locked(
             pivot,
             event_type="pivot_config_response",
             topic=normalized_topic,
             ts=ts,
-            summary="Configuracao IDP 03 recebida.",
+            summary=f"Configuracao IDP {raw_idp} recebida.",
             details={
-                "idp": parsed.get("idp"),
+                "idp": raw_idp,
                 "field_count": len(parsed.get("parts", [])),
                 "config": dict(parsed_config),
             },
@@ -4399,6 +4474,15 @@ class TelemetryStore:
         pivot_config_summary["pending"] = last_request_ts is not None and (
             last_response_ts is None or last_response_ts < last_request_ts
         )
+        network_config = _normalize_network_config_state(pivot.get("network_config"))
+        network_config_summary = dict(network_config)
+        network_config_summary["last_request_at"] = _ts_to_str(network_config.get("last_request_ts"))
+        network_config_summary["last_response_at"] = _ts_to_str(network_config.get("last_response_ts"))
+        net_last_request_ts = _safe_float(network_config.get("last_request_ts"), None)
+        net_last_response_ts = _safe_float(network_config.get("last_response_ts"), None)
+        network_config_summary["pending"] = net_last_request_ts is not None and (
+            net_last_response_ts is None or net_last_response_ts < net_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -4498,6 +4582,7 @@ class TelemetryStore:
                 "ack_count": int(modem_reset.get("ack_count") or 0),
             },
             "pivot_config": pivot_config_summary,
+            "network_config": network_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):

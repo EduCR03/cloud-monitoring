@@ -1448,8 +1448,9 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                     self._write_json(400, {"error": "pivot_id obrigatorio"})
                     return
 
+                idp = str(body.get("idp") or "03").strip()
                 try:
-                    result = telemetry_store.send_pivot_config_request(pivot_id)
+                    result = telemetry_store.send_config_request(pivot_id, idp=idp)
                 except ValueError as exc:
                     self._write_json(400, {"error": str(exc)})
                     return
