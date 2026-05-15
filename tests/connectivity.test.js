@@ -542,3 +542,53 @@ test("ui: summary cards history usa a contagem atual do card no ponto mais recen
   assert.equal(points.at(-1).total_count, 3);
   assert.equal(points.at(-1).ts, 300);
 });
+
+test("ui: summary cards history remove outlier recente de warm-up", () => {
+  const currentCounts = {
+    historyPoint: {
+      ts: 7_200,
+      total_count: 99,
+      connected_count: 60,
+      disconnected_count: 33,
+      initial_count: 6,
+      quality_green_count: 55,
+      quality_calculating_count: 6,
+      quality_yellow_count: 3,
+      quality_critical_count: 35,
+    },
+  };
+
+  const points = _test.buildSummaryCardsDisplayHistoryPoints(
+    [
+      {
+        ts: 3_600,
+        total_count: 99,
+        connected_count: 61,
+        disconnected_count: 37,
+        initial_count: 1,
+        quality_green_count: 1,
+        quality_calculating_count: 1,
+        quality_yellow_count: 53,
+        quality_critical_count: 44,
+      },
+      {
+        ts: 7_200,
+        total_count: 99,
+        connected_count: 61,
+        disconnected_count: 37,
+        initial_count: 1,
+        quality_green_count: 1,
+        quality_calculating_count: 1,
+        quality_yellow_count: 53,
+        quality_critical_count: 44,
+      },
+    ],
+    currentCounts,
+    { payload: { updated_at_ts: 7_200, bucket_sec: 3_600 } }
+  );
+
+  assert.equal(points[0].quality_green_count, 55);
+  assert.equal(points[0].quality_yellow_count, 3);
+  assert.equal(points.at(-1).quality_green_count, 55);
+  assert.equal(points.at(-1).quality_critical_count, 35);
+});

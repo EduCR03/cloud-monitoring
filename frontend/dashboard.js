@@ -1048,6 +1048,33 @@ function resolveSummaryCardsHistoryReferenceTs(payload = state.summaryCardsHisto
   return Math.floor(Date.now() / 1000);
 }
 
+function isRecentSummaryHistoryWarmupOutlier(point, currentPoint, referenceTs, bucketSec) {
+  if (!point || typeof point !== "object" || !currentPoint || typeof currentPoint !== "object") return false;
+  const pointTs = Number(point.ts || 0);
+  const safeReferenceTs = Number(referenceTs || 0);
+  if (!Number.isFinite(pointTs) || pointTs <= 0 || !Number.isFinite(safeReferenceTs) || safeReferenceTs <= 0) {
+    return false;
+  }
+
+  const safeBucketSec = Math.max(3600, Number(bucketSec || 3600) || 3600);
+  const ageSec = safeReferenceTs - pointTs;
+  if (ageSec < 0 || ageSec > safeBucketSec * 3) return false;
+
+  const currentTotal = Math.max(0, Number(currentPoint.total_count || 0) || 0);
+  const pointTotal = Math.max(0, Number(point.total_count || 0) || 0);
+  if (currentTotal <= 0 || pointTotal <= 0) return false;
+  if (Math.abs(currentTotal - pointTotal) > Math.max(5, currentTotal * 0.1)) return false;
+
+  const fields = Object.values(SUMMARY_CARD_HISTORY_FIELDS).filter((field) => field !== "total_count");
+  const maxDiff = fields.reduce((largest, field) => {
+    const currentValue = Math.max(0, Number(currentPoint[field] || 0) || 0);
+    const pointValue = Math.max(0, Number(point[field] || 0) || 0);
+    return Math.max(largest, Math.abs(currentValue - pointValue));
+  }, 0);
+
+  return maxDiff >= Math.max(8, currentTotal * 0.2);
+}
+
 function buildSummaryCardsDisplayHistoryPoints(points, currentCounts, options = {}) {
   const safePoints = normalizeSummaryCardsHistoryPoints(points);
   const counts = currentCounts && typeof currentCounts === "object" ? currentCounts : {};
@@ -1063,7 +1090,18 @@ function buildSummaryCardsDisplayHistoryPoints(points, currentCounts, options = 
     return historyPoint.total_count > 0 ? normalizeSummaryCardsHistoryPoints([historyPoint]) : [];
   }
 
-  const mergedPoints = safePoints.map((point) => ({ ...point }));
+  const bucketSec = Number((options.payload || {}).bucket_sec || 3600) || 3600;
+  const mergedPoints = safePoints.map((point) => {
+    if (!isRecentSummaryHistoryWarmupOutlier(point, historyPoint, referenceTs, bucketSec)) {
+      return { ...point };
+    }
+    return {
+      ...point,
+      ...historyPoint,
+      ts: Number(point.ts || 0) || historyPoint.ts,
+      at: point.at,
+    };
+  });
   const lastIndex = mergedPoints.length - 1;
   const lastPoint = mergedPoints[lastIndex] || {};
   mergedPoints[lastIndex] = {
@@ -5866,6 +5904,7 @@ if (typeof module !== "undefined" && module.exports) {
       formatProbeConfiguredNetworks,
       normalizeSummaryCardsHistoryPoints,
       computeSummaryCardCountsFromPivots,
+      isRecentSummaryHistoryWarmupOutlier,
       buildSummaryCardsDisplayHistoryPoints,
       sampleSummaryCardsHistoryPoints,
       buildSummaryCardsHistorySvgModel,
