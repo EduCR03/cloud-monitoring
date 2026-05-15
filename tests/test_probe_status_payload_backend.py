@@ -12,6 +12,7 @@ from backend.cloudv2_telemetry import (
     parse_pivot_config_payload,
     parse_probe_status_payload,
     parse_rush_config_payload,
+    parse_sector_config_payload,
 )
 
 
@@ -307,6 +308,53 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_sector_config_response_requires_prior_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                parsed, error = parse_device_payload("#05-PivotA_1-2-10-90-120-180$")
+                self.assertIsNone(error)
+                parsed_config = parse_sector_config_payload(parsed)
+                self.assertEqual(parsed_config["sector_number"], 2)
+                self.assertEqual(parsed_config["sectors"][0]["start_angle"], 10)
+                self.assertEqual(parsed_config["sectors"][1]["end_angle"], 180)
+                self.assertIsNone(parsed_config["sectors"][2]["start_angle"])
+
+                unsolicited = store.process_message(
+                    "cloudv2-config",
+                    "#05-PivotA_1-2-10-90-120-180$",
+                    ts=1_773_171_010.0,
+                )
+                self.assertTrue(unsolicited["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_011.0)
+                self.assertIsNone(snapshot["summary"]["sector_config"]["sector_number"])
+
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+                request = store.send_config_request("PivotA_1", idp="05")
+                self.assertEqual(request["payload"], "#05-PivotA_1$")
+                self.assertEqual(sent_messages, [("PivotA_1", "#05-PivotA_1$")])
+
+                response = store.process_message(
+                    "cloudv2-config",
+                    "#05-PivotA_1-2-10-90-120-180$",
+                    ts=request["request_ts"] + 1,
+                )
+                self.assertTrue(response["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=request["request_ts"] + 2)
+                config = snapshot["summary"]["sector_config"]
+                self.assertEqual(config["sector_number"], 2)
+                self.assertEqual(config["sectors"][0]["start_angle"], 10)
+                self.assertEqual(config["sectors"][0]["end_angle"], 90)
+                self.assertEqual(config["sectors"][1]["start_angle"], 120)
+                self.assertEqual(config["sectors"][1]["end_angle"], 180)
+                self.assertFalse(config["pending"])
+            finally:
+                store.stop()
+
     def test_config_update_sends_full_payload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)
@@ -347,16 +395,29 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                         "enabled": "1",
                     },
                 )
+                sector = store.send_config_update(
+                    "PivotA_1",
+                    idp="05",
+                    values={
+                        "sector_number": "2",
+                        "sectors": [
+                            {"start_angle": "10", "end_angle": "90"},
+                            {"start_angle": "120", "end_angle": "180"},
+                        ],
+                    },
+                )
 
                 self.assertEqual(network["payload"], "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$")
                 self.assertEqual(pivot["payload"], "#03-PivotA_1-NA-NA-600-2-5-10$")
                 self.assertEqual(rush["payload"], "#04-PivotA_1-0800-1830-1$")
+                self.assertEqual(sector["payload"], "#05-PivotA_1-2-10-90-120-180-0-0-0-0$")
                 self.assertEqual(
                     sent_messages,
                     [
                         ("PivotA_1", "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$"),
                         ("PivotA_1", "#03-PivotA_1-NA-NA-600-2-5-10$"),
                         ("PivotA_1", "#04-PivotA_1-0800-1830-1$"),
+                        ("PivotA_1", "#05-PivotA_1-2-10-90-120-180-0-0-0-0$"),
                     ],
                 )
             finally:

@@ -354,6 +354,35 @@ def parse_rush_config_payload(parsed):
     }
 
 
+def parse_sector_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("5", "05"):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        return None
+
+    sectors = []
+    for index in range(4):
+        start_index = 3 + (index * 2)
+        end_index = start_index + 1
+        sectors.append(
+            {
+                "start_angle": _safe_int(parts[start_index], None) if len(parts) > start_index else None,
+                "end_angle": _safe_int(parts[end_index], None) if len(parts) > end_index else None,
+            }
+        )
+
+    return {
+        "sector_number": _safe_int(parts[2], None) if len(parts) > 2 else None,
+        "sectors": sectors,
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -364,6 +393,7 @@ PIVOT_CONFIG_VALUE_KEYS = (
 )
 NETWORK_CONFIG_VALUE_KEYS = ("gprs_id", "modem_apn", "wifi_ssid", "wifi_pass")
 RUSH_CONFIG_VALUE_KEYS = ("start_time_hhmm", "end_time_hhmm", "enabled")
+SECTOR_CONFIG_VALUE_KEYS = ("sector_number", "sectors")
 
 
 def _new_pivot_config_state():
@@ -405,6 +435,20 @@ def _new_rush_config_state():
     }
     for key in RUSH_CONFIG_VALUE_KEYS:
         state[key] = None
+    return state
+
+
+def _new_sector_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+        "sector_number": None,
+        "sectors": [{"start_angle": None, "end_angle": None} for _ in range(4)],
+    }
     return state
 
 
@@ -459,7 +503,34 @@ def _normalize_rush_config_state(value):
     return normalized
 
 
-SUPPORTED_CONFIG_IDPS = ("02", "03", "04")
+def _normalize_sector_config_state(value):
+    normalized = _new_sector_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    parsed_count = _safe_int(value.get("sector_number"), None)
+    normalized["sector_number"] = parsed_count if parsed_count is not None and 1 <= parsed_count <= 4 else None
+    raw_sectors = value.get("sectors") if isinstance(value.get("sectors"), list) else []
+    sectors = []
+    for index in range(4):
+        raw_sector = raw_sectors[index] if index < len(raw_sectors) and isinstance(raw_sectors[index], dict) else {}
+        sectors.append(
+            {
+                "start_angle": _safe_int(raw_sector.get("start_angle"), None),
+                "end_angle": _safe_int(raw_sector.get("end_angle"), None),
+            }
+        )
+    normalized["sectors"] = sectors
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04", "05")
 
 
 def _config_state_spec(idp):
@@ -470,6 +541,8 @@ def _config_state_spec(idp):
         return ("pivot_config", parse_pivot_config_payload, _normalize_pivot_config_state)
     if normalized == "04":
         return ("rush_config", parse_rush_config_payload, _normalize_rush_config_state)
+    if normalized == "05":
+        return ("sector_config", parse_sector_config_payload, _normalize_sector_config_state)
     return (None, None, None)
 
 
@@ -509,6 +582,18 @@ def _validate_config_payload_bool(value, field_name):
     if parsed is None:
         raise ValueError(f"{field_name} deve ser 0 ou 1")
     return "1" if parsed else "0"
+
+
+def _validate_config_payload_sector_count(value):
+    parsed = _validate_config_payload_int(value, "sector_number", 1, 4)
+    return parsed
+
+
+def _read_sector_angle_value(safe_values, index, key):
+    sectors = safe_values.get("sectors")
+    if isinstance(sectors, list) and index < len(sectors) and isinstance(sectors[index], dict):
+        return sectors[index].get(key)
+    return safe_values.get(f"sector_{index + 1}_{key}")
 
 
 def _parse_version_triplet(value):
@@ -2138,6 +2223,7 @@ class TelemetryStore:
         pivot["pivot_config"] = _normalize_pivot_config_state(summary.get("pivot_config"))
         pivot["network_config"] = _normalize_network_config_state(summary.get("network_config"))
         pivot["rush_config"] = _normalize_rush_config_state(summary.get("rush_config"))
+        pivot["sector_config"] = _normalize_sector_config_state(summary.get("sector_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2815,6 +2901,15 @@ class TelemetryStore:
                 _validate_config_payload_hhmm(safe_values.get("end_time_hhmm"), "end_time_hhmm"),
                 _validate_config_payload_bool(safe_values.get("enabled"), "enabled"),
             ]
+        elif idp == "05":
+            sector_count = _validate_config_payload_sector_count(safe_values.get("sector_number"))
+            fields = [str(sector_count)]
+            for index in range(4):
+                if index < sector_count:
+                    fields.append(str(_validate_config_payload_int(_read_sector_angle_value(safe_values, index, "start_angle"), f"sector_{index + 1}_start_angle", 0, 65535)))
+                    fields.append(str(_validate_config_payload_int(_read_sector_angle_value(safe_values, index, "end_angle"), f"sector_{index + 1}_end_angle", 0, 65535)))
+                else:
+                    fields.extend(["0", "0"])
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -3110,6 +3205,7 @@ class TelemetryStore:
             "pivot_config": _new_pivot_config_state(),
             "network_config": _new_network_config_state(),
             "rush_config": _new_rush_config_state(),
+            "sector_config": _new_sector_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3197,6 +3293,11 @@ class TelemetryStore:
         baseline_rush_config = summary.get("rush_config")
         if isinstance(baseline_rush_config, dict) and baseline_rush_config:
             pivot["rush_config"] = _normalize_rush_config_state(baseline_rush_config)
+            changed = True
+
+        baseline_sector_config = summary.get("sector_config")
+        if isinstance(baseline_sector_config, dict) and baseline_sector_config:
+            pivot["sector_config"] = _normalize_sector_config_state(baseline_sector_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -4714,6 +4815,15 @@ class TelemetryStore:
         rush_config_summary["pending"] = rush_last_request_ts is not None and (
             rush_last_response_ts is None or rush_last_response_ts < rush_last_request_ts
         )
+        sector_config = _normalize_sector_config_state(pivot.get("sector_config"))
+        sector_config_summary = dict(sector_config)
+        sector_config_summary["last_request_at"] = _ts_to_str(sector_config.get("last_request_ts"))
+        sector_config_summary["last_response_at"] = _ts_to_str(sector_config.get("last_response_ts"))
+        sector_last_request_ts = _safe_float(sector_config.get("last_request_ts"), None)
+        sector_last_response_ts = _safe_float(sector_config.get("last_response_ts"), None)
+        sector_config_summary["pending"] = sector_last_request_ts is not None and (
+            sector_last_response_ts is None or sector_last_response_ts < sector_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -4815,6 +4925,7 @@ class TelemetryStore:
             "pivot_config": pivot_config_summary,
             "network_config": network_config_summary,
             "rush_config": rush_config_summary,
+            "sector_config": sector_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -5080,6 +5191,7 @@ class TelemetryStore:
                     pivot["network_config"] = _normalize_network_config_state(raw_pivot.get("network_config"))
                     pivot["pivot_config"] = _normalize_pivot_config_state(raw_pivot.get("pivot_config"))
                     pivot["rush_config"] = _normalize_rush_config_state(raw_pivot.get("rush_config"))
+                    pivot["sector_config"] = _normalize_sector_config_state(raw_pivot.get("sector_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):

@@ -192,6 +192,19 @@ const ui = HAS_DOM
       rushConfigStartTime: document.getElementById("rushConfigStartTime"),
       rushConfigEndTime: document.getElementById("rushConfigEndTime"),
       rushConfigEnabled: document.getElementById("rushConfigEnabled"),
+      requestSectorConfigBtn: document.getElementById("requestSectorConfigBtn"),
+      sendSectorConfigBtn: document.getElementById("sendSectorConfigBtn"),
+      sectorConfigHint: document.getElementById("sectorConfigHint"),
+      sectorConfigCount: document.getElementById("sectorConfigCount"),
+      sectorConfigAngles: document.getElementById("sectorConfigAngles"),
+      sectorConfigStart1: document.getElementById("sectorConfigStart1"),
+      sectorConfigEnd1: document.getElementById("sectorConfigEnd1"),
+      sectorConfigStart2: document.getElementById("sectorConfigStart2"),
+      sectorConfigEnd2: document.getElementById("sectorConfigEnd2"),
+      sectorConfigStart3: document.getElementById("sectorConfigStart3"),
+      sectorConfigEnd3: document.getElementById("sectorConfigEnd3"),
+      sectorConfigStart4: document.getElementById("sectorConfigStart4"),
+      sectorConfigEnd4: document.getElementById("sectorConfigEnd4"),
     }
   : {};
 
@@ -3420,6 +3433,12 @@ function getSelectedRushConfig() {
   return config || {};
 }
 
+function getSelectedSectorConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.sector_config === "object" ? summary.sector_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3463,6 +3482,14 @@ function wireProtectedEditableInputs() {
     ui.rushConfigStartTime,
     ui.rushConfigEndTime,
     ui.rushConfigEnabled,
+    ui.sectorConfigStart1,
+    ui.sectorConfigEnd1,
+    ui.sectorConfigStart2,
+    ui.sectorConfigEnd2,
+    ui.sectorConfigStart3,
+    ui.sectorConfigEnd3,
+    ui.sectorConfigStart4,
+    ui.sectorConfigEnd4,
   ].filter(Boolean);
 
   protectedInputs.forEach((input) => {
@@ -3474,6 +3501,44 @@ function wireProtectedEditableInputs() {
     input.addEventListener("input", () => {
       input.dataset.userDirty = "1";
     });
+  });
+
+  if (ui.sectorConfigCount) {
+    ui.sectorConfigCount.addEventListener("change", () => {
+      ui.sectorConfigCount.dataset.userDirty = "1";
+      renderSectorConfigFieldsVisibility();
+    });
+  }
+}
+
+function getSectorConfigCount() {
+  const parsed = Number.parseInt(String((ui.sectorConfigCount && ui.sectorConfigCount.value) || "1"), 10);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.max(1, Math.min(4, parsed));
+}
+
+function getSectorConfigInputs() {
+  return [
+    { start: ui.sectorConfigStart1, end: ui.sectorConfigEnd1 },
+    { start: ui.sectorConfigStart2, end: ui.sectorConfigEnd2 },
+    { start: ui.sectorConfigStart3, end: ui.sectorConfigEnd3 },
+    { start: ui.sectorConfigStart4, end: ui.sectorConfigEnd4 },
+  ];
+}
+
+function setSectorConfigCount(value) {
+  if (!ui.sectorConfigCount || shouldPreserveEditableInput(ui.sectorConfigCount)) return;
+  const parsed = Number.parseInt(String(value || ""), 10);
+  const count = Number.isFinite(parsed) ? Math.max(1, Math.min(4, parsed)) : 1;
+  ui.sectorConfigCount.value = String(count);
+}
+
+function renderSectorConfigFieldsVisibility() {
+  const count = getSectorConfigCount();
+  if (!ui.sectorConfigAngles) return;
+  ui.sectorConfigAngles.querySelectorAll("[data-sector-config-row]").forEach((element) => {
+    const row = Number.parseInt(String(element.getAttribute("data-sector-config-row") || "1"), 10);
+    element.hidden = row > count;
   });
 }
 
@@ -3526,6 +3591,7 @@ function renderNetworkConfigModal() {
 function renderSettingsModalContent() {
   const config = getSelectedPivotConfig();
   const rushConfig = getSelectedRushConfig();
+  const sectorConfig = getSelectedSectorConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
   setPivotConfigField(ui.pivotConfigPressure, config.pressure);
@@ -3548,6 +3614,20 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestRushConfigBtn, "04");
   renderConfigSendButton(ui.sendRushConfigBtn, "04");
+
+  setSectorConfigCount(sectorConfig.sector_number);
+  const sectors = Array.isArray(sectorConfig.sectors) ? sectorConfig.sectors : [];
+  getSectorConfigInputs().forEach((pair, index) => {
+    const sector = sectors[index] && typeof sectors[index] === "object" ? sectors[index] : {};
+    setPivotConfigField(pair.start, sector.start_angle);
+    setPivotConfigField(pair.end, sector.end_angle);
+  });
+  renderSectorConfigFieldsVisibility();
+  if (ui.sectorConfigHint) {
+    ui.sectorConfigHint.textContent = resolveConfigHintText(sectorConfig);
+  }
+  renderConfigRequestButton(ui.requestSectorConfigBtn, "05");
+  renderConfigSendButton(ui.sendSectorConfigBtn, "05");
 }
 
 function openSettingsModal() {
@@ -5508,6 +5588,15 @@ function readConfigValues(idp) {
       enabled: readConfigInputValue(ui.rushConfigEnabled),
     };
   }
+  if (idp === "05") {
+    return {
+      sector_number: String(getSectorConfigCount()),
+      sectors: getSectorConfigInputs().map((pair) => ({
+        start_angle: readConfigInputValue(pair.start),
+        end_angle: readConfigInputValue(pair.end),
+      })),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5523,7 +5612,19 @@ function markConfigInputsClean(idp) {
     ? [ui.networkConfigGprsId, ui.networkConfigModemApn, ui.networkConfigWifiSsid, ui.networkConfigWifiPass]
     : idp === "04"
       ? [ui.rushConfigStartTime, ui.rushConfigEndTime, ui.rushConfigEnabled]
-      : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
+      : idp === "05"
+        ? [
+            ui.sectorConfigCount,
+            ui.sectorConfigStart1,
+            ui.sectorConfigEnd1,
+            ui.sectorConfigStart2,
+            ui.sectorConfigEnd2,
+            ui.sectorConfigStart3,
+            ui.sectorConfigEnd3,
+            ui.sectorConfigStart4,
+            ui.sectorConfigEnd4,
+          ]
+        : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
 }
 
@@ -5533,6 +5634,9 @@ function getConfigActionButtons(idp) {
   }
   if (idp === "04") {
     return { request: ui.requestRushConfigBtn, send: ui.sendRushConfigBtn };
+  }
+  if (idp === "05") {
+    return { request: ui.requestSectorConfigBtn, send: ui.sendSectorConfigBtn };
   }
   return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
@@ -6247,6 +6351,12 @@ function wireEvents() {
   }
   if (ui.sendRushConfigBtn) {
     ui.sendRushConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("04"));
+  }
+  if (ui.requestSectorConfigBtn) {
+    ui.requestSectorConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("05"));
+  }
+  if (ui.sendSectorConfigBtn) {
+    ui.sendSectorConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("05"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {

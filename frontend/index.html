@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="cloudv2-api-base-url" content=""/>
   <title>Monitoramento de Conectividade</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260515f"/>
+  <link rel="stylesheet" href="dashboard.css?v=20260515g"/>
 </head>
 <body>
   <a class="skip-link" href="#cardsSection">Ir para lista de pivôs</a>
@@ -582,6 +582,64 @@
             </label>
           </div>
         </section>
+
+        <section class="settings-config-card">
+          <div class="settings-section-head">
+            <div>
+              <h3>Setores</h3>
+              <p id="sectorConfigHint">Peça a configuração para preencher os campos.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="requestSectorConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendSectorConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
+          </div>
+          <div class="pivot-config-grid sector-config-grid" aria-label="Campos de configuração de setores">
+            <label class="sector-count-field">
+              <span>Número de setores</span>
+              <select id="sectorConfigCount">
+                <option value="1">1 setor</option>
+                <option value="2">2 setores</option>
+                <option value="3">3 setores</option>
+                <option value="4">4 setores</option>
+              </select>
+            </label>
+            <div id="sectorConfigAngles" class="sector-angle-grid">
+              <label data-sector-config-row="1">
+                <span>Setor 1 inicial</span>
+                <input id="sectorConfigStart1" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="1">
+                <span>Setor 1 final</span>
+                <input id="sectorConfigEnd1" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="2" hidden>
+                <span>Setor 2 inicial</span>
+                <input id="sectorConfigStart2" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="2" hidden>
+                <span>Setor 2 final</span>
+                <input id="sectorConfigEnd2" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="3" hidden>
+                <span>Setor 3 inicial</span>
+                <input id="sectorConfigStart3" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="3" hidden>
+                <span>Setor 3 final</span>
+                <input id="sectorConfigEnd3" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="4" hidden>
+                <span>Setor 4 inicial</span>
+                <input id="sectorConfigStart4" type="text" inputmode="numeric" value="-"/>
+              </label>
+              <label data-sector-config-row="4" hidden>
+                <span>Setor 4 final</span>
+                <input id="sectorConfigEnd4" type="text" inputmode="numeric" value="-"/>
+              </label>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -589,6 +647,6 @@
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515l"></script>
+  <script src="dashboard.js?v=20260515m"></script>
 </body>
 </html>

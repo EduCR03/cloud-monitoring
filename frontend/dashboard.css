@@ -2102,6 +2102,32 @@ a:focus {
   font-size: 14px;
 }
 
+.pivot-config-grid select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #b7d4c1;
+  border-radius: 9px;
+  background: #f8fbf9;
+  padding: 8px 9px;
+  color: #102f23;
+  font-size: 14px;
+}
+
+.sector-config-grid {
+  grid-template-columns: minmax(130px, 0.65fr) minmax(0, 2fr);
+}
+
+.sector-angle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.sector-angle-grid label {
+  display: grid;
+  gap: 4px;
+}
+
 @media (max-width: 640px) {
   .settings-section-head {
     align-items: stretch;
@@ -2114,6 +2140,10 @@ a:focus {
 
   .pivot-config-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sector-config-grid {
+    grid-template-columns: 1fr;
   }
 }
 
