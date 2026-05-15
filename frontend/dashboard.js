@@ -3890,7 +3890,13 @@ function buildShutdownHistoryFromTimeline() {
 function getSelectedShutdownHistory() {
   const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
   const history = Array.isArray(summary.shutdown_history) ? summary.shutdown_history : [];
-  const merged = [...history.filter((item) => item && typeof item === "object"), ...buildShutdownHistoryFromTimeline()];
+  const validShutdown = (item) => {
+    if (!item || typeof item !== "object") return false;
+    const rawPayload = text(item.raw_payload, "").trim();
+    if (rawPayload) return rawPayload.startsWith("#28-");
+    return text(item.idp, "").trim() === "28";
+  };
+  const merged = [...history.filter(validShutdown), ...buildShutdownHistoryFromTimeline()];
   const byPayload = new Map();
   for (const item of merged) {
     const key = text(item.raw_payload, "").trim();
@@ -3991,13 +3997,46 @@ function renderShutdownsModalContentLegacy() {
       return `
         <article class="shutdown-card">
           <div class="shutdown-card-head">
-            <div>
-              <strong>${escapeHtml(formatShutdownValue(event.shutdown_reason))}</strong>
-              <span>${escapeHtml(formatShutdownValue(event.command_origin_label))}</span>
+            <div class="shutdown-card-title">
+              <strong>${escapeHtml(reason)}</strong>
+              <span>${escapeHtml(actor)} desligou o pivo</span>
             </div>
-            <span>${escapeHtml(formatShutdownValue(event.topic))}</span>
+            <time>${escapeHtml(formatShutdownValue(event.board_time_display))}</time>
           </div>
-          <div class="shutdown-field-grid">${fields}</div>
+          <div class="shutdown-field-grid">
+            <div class="shutdown-field">
+              <span>Autor</span>
+              <strong>${escapeHtml(actor)}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Motivo</span>
+              <strong>${escapeHtml(reason)}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Posicao</span>
+              <strong>${escapeHtml(position)}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Quando</span>
+              <strong>${escapeHtml(formatShutdownValue(event.board_datetime_display))}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Como</span>
+              <strong>${escapeHtml(formatShutdownValue(event.shutdown_idp_label))}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Agendamento</span>
+              <strong>${escapeHtml(scheduleText)}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Barreira</span>
+              <strong>${escapeHtml(formatShutdownBarrier(event))}</strong>
+            </div>
+            <div class="shutdown-field">
+              <span>Recebido</span>
+              <strong>${escapeHtml(formatShutdownValue(event.backend_datetime_display))}</strong>
+            </div>
+          </div>
           <details class="shutdown-payload">
             <summary>Payload recebido</summary>
             <pre>${escapeHtml(formatShutdownValue(event.raw_payload))}</pre>
@@ -4069,28 +4108,46 @@ function renderShutdownsModalContent() {
             </div>
             <time>${escapeHtml(formatShutdownValue(event.board_time_display))}</time>
           </div>
-          <div class="shutdown-story">
-            <span>Origem</span><strong>${escapeHtml(actor)}</strong>
-            <span>Motivo</span><strong>${escapeHtml(reason)}</strong>
-            <span>Posição</span><strong>${escapeHtml(position)}</strong>
-            <span>Quando</span><strong>${escapeHtml(formatShutdownValue(event.board_datetime_display))}</strong>
-          </div>
-          <div class="shutdown-detail-row">
-            <div>
+          <div class="shutdown-field-grid">
+            <div class="shutdown-field">
+              <span>Autor</span>
+              <strong>${escapeHtml(reason)}</strong>
+              <small>Quem desligou o pivo.</small>
+            </div>
+            <div class="shutdown-field">
+              <span>Origem</span>
+              <strong>${escapeHtml(actor)}</strong>
+              <small>Aplicativo ou rotina.</small>
+            </div>
+            <div class="shutdown-field">
+              <span>Posicao</span>
+              <strong>${escapeHtml(position)}</strong>
+              <small>Onde desligou.</small>
+            </div>
+            <div class="shutdown-field">
+              <span>Quando</span>
+              <strong>${escapeHtml(formatShutdownValue(event.board_datetime_display))}</strong>
+              <small>Horario da placa.</small>
+            </div>
+            <div class="shutdown-field">
               <span>Como</span>
               <strong>${escapeHtml(formatShutdownValue(event.shutdown_idp_label))}</strong>
+              <small>Tipo de comando.</small>
             </div>
-            <div>
+            <div class="shutdown-field">
               <span>Agendamento</span>
               <strong>${escapeHtml(scheduleText)}</strong>
+              <small>Origem agendada.</small>
             </div>
-            <div>
+            <div class="shutdown-field">
               <span>Barreira</span>
               <strong>${escapeHtml(formatShutdownBarrier(event))}</strong>
+              <small>Perto da barreira.</small>
             </div>
-            <div>
+            <div class="shutdown-field">
               <span>Recebido</span>
               <strong>${escapeHtml(formatShutdownValue(event.backend_datetime_display))}</strong>
+              <small>Horario do backend.</small>
             </div>
           </div>
           <details class="shutdown-payload">

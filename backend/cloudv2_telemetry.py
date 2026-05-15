@@ -558,6 +558,12 @@ def _normalize_shutdown_reason_event(value):
             rebuilt = _build_shutdown_reason_event(parsed, topic, ts, raw_payload=raw_payload)
             if rebuilt is not None:
                 return rebuilt
+            return None
+        return None
+
+    raw_idp = _normalize_text(value.get("idp"))
+    if raw_idp and raw_idp != "28":
+        return None
 
     event = {
         "idp": "28",
