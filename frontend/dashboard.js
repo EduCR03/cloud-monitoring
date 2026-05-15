@@ -4060,14 +4060,17 @@ function renderShutdownsModalContent() {
       return `
         <article class="shutdown-card">
           <div class="shutdown-card-head">
-            <div>
-              <strong>${escapeHtml(reason)}</strong>
-              <span>${escapeHtml(actor)} desligou o pivo</span>
+            <div class="shutdown-card-title">
+              <div>
+                <span>Autor</span>
+                <strong>${escapeHtml(reason)}</strong>
+              </div>
+              <small>${escapeHtml(actor)}</small>
             </div>
             <time>${escapeHtml(formatShutdownValue(event.board_time_display))}</time>
           </div>
           <div class="shutdown-story">
-            <span>Quem</span><strong>${escapeHtml(actor)}</strong>
+            <span>Origem</span><strong>${escapeHtml(actor)}</strong>
             <span>Motivo</span><strong>${escapeHtml(reason)}</strong>
             <span>Posição</span><strong>${escapeHtml(position)}</strong>
             <span>Quando</span><strong>${escapeHtml(formatShutdownValue(event.board_datetime_display))}</strong>
@@ -4106,11 +4109,12 @@ function renderShutdownsModalContent() {
         <strong>${escapeHtml(String(visibleHistory.length))} desliga(s)</strong>
       </div>
       <label>
-        <span>Data</span>
-        <select id="shutdownsDateSelect">${optionsHtml}</select>
+        <span>Calendario</span>
+        <input id="shutdownsDateSelect" type="date" value="${escapeHtml(selectedDate)}" list="shutdownsDateOptions"/>
+        <datalist id="shutdownsDateOptions">${optionsHtml}</datalist>
       </label>
     </div>
-    <div class="shutdown-list">${cardsHtml}</div>
+    <div class="shutdown-list">${cardsHtml || '<div class="shutdown-empty">Nenhum desliga neste dia.</div>'}</div>
   `;
 
   const dateSelect = document.getElementById("shutdownsDateSelect");
