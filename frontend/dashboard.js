@@ -99,6 +99,7 @@ const ui = HAS_DOM
       pivotStatus: document.getElementById("pivotStatus"),
       pivotQuality: document.getElementById("pivotQuality"),
       deletePivotBtn: document.getElementById("deletePivotBtn"),
+      pivotSettingsBtn: document.getElementById("pivotSettingsBtn"),
       pivotAdminTech: document.getElementById("pivotAdminTech"),
       pivotTechControls: document.getElementById("pivotTechControls"),
       pivotConcentratorToggle: document.getElementById("pivotConcentratorToggle"),
@@ -167,6 +168,8 @@ const ui = HAS_DOM
       sessionHint: document.getElementById("sessionHint"),
       initialLoadingOverlay: document.getElementById("initialLoadingOverlay"),
       initialLoadingText: document.getElementById("initialLoadingText"),
+      settingsModal: document.getElementById("settingsModal"),
+      settingsModalClose: document.getElementById("settingsModalClose"),
     }
   : {};
 
@@ -3374,6 +3377,18 @@ function downloadConnectivityEventsTxt(pivot, filterKey) {
   return true;
 }
 
+function openSettingsModal() {
+  if (!ui.settingsModal) return;
+  ui.settingsModal.hidden = false;
+  ui.settingsModalClose?.focus();
+}
+
+function closeSettingsModal() {
+  if (!ui.settingsModal) return;
+  ui.settingsModal.hidden = true;
+  ui.pivotSettingsBtn?.focus();
+}
+
 function normalizeRange(pivot) {
   const nowTs = resolveTimelineReferenceNowTs(pivot);
   const timeline = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
@@ -5915,6 +5930,22 @@ function wireEvents() {
   if (ui.resetPivotModemBtn) {
     ui.resetPivotModemBtn.addEventListener("click", resetSelectedPivotModem);
   }
+  if (ui.pivotSettingsBtn) {
+    ui.pivotSettingsBtn.addEventListener("click", openSettingsModal);
+  }
+  if (ui.settingsModalClose) {
+    ui.settingsModalClose.addEventListener("click", closeSettingsModal);
+  }
+  if (ui.settingsModal) {
+    ui.settingsModal.addEventListener("click", (event) => {
+      if (event.target === ui.settingsModal) closeSettingsModal();
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ui.settingsModal && !ui.settingsModal.hidden) {
+      closeSettingsModal();
+    }
+  });
   if (ui.bulkResetPivotsBtn) {
     ui.bulkResetPivotsBtn.addEventListener("click", resetSelectedPivotsBulk);
   }

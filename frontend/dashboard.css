@@ -1349,6 +1349,26 @@ a:focus {
   flex-wrap: wrap;
 }
 
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #bfd9ca;
+  border-radius: 12px;
+  background: #f3faf6;
+  color: #1f5c3d;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.icon-button:hover:not(:disabled) {
+  border-color: #87ae97;
+  background: #e7f4ec;
+}
+
 .pivot-admin-tech {
   display: flex;
   flex-wrap: wrap;
@@ -1953,6 +1973,47 @@ a:focus {
   word-break: break-word;
   font-size: 11px;
   color: #27493a;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 35, 24, 0.32);
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  width: min(520px, 100%);
+  border: 1px solid #cce2d4;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(18, 58, 39, 0.24);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #e3efe8;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.icon-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .table-wrap {
