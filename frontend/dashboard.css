@@ -2022,6 +2022,8 @@ a:focus {
 
 .settings-modal {
   width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
 }
 
 .settings-modal-body {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="cloudv2-api-base-url" content=""/>
   <title>Monitoramento de Conectividade</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260515e"/>
+  <link rel="stylesheet" href="dashboard.css?v=20260515f"/>
 </head>
 <body>
   <a class="skip-link" href="#cardsSection">Ir para lista de pivôs</a>
@@ -555,6 +555,33 @@
             </label>
           </div>
         </section>
+
+        <section class="settings-config-card">
+          <div class="settings-section-head">
+            <div>
+              <h3>Modo Rush</h3>
+              <p id="rushConfigHint">Peça a configuração para preencher os campos.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="requestRushConfigBtn" class="primary compact-action" type="button">Pedir configuração</button>
+              <button id="sendRushConfigBtn" class="ghost compact-action" type="button">Configurar</button>
+            </div>
+          </div>
+          <div class="pivot-config-grid" aria-label="Campos de configuração do modo rush">
+            <label>
+              <span>Início (HHMM)</span>
+              <input id="rushConfigStartTime" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Fim (HHMM)</span>
+              <input id="rushConfigEndTime" type="text" inputmode="numeric" value="-"/>
+            </label>
+            <label>
+              <span>Ativo (0/1)</span>
+              <input id="rushConfigEnabled" type="text" inputmode="numeric" value="-"/>
+            </label>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -562,6 +589,6 @@
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="runtime-config.js?v=20260515h"></script>
-  <script src="dashboard.js?v=20260515k"></script>
+  <script src="dashboard.js?v=20260515l"></script>
 </body>
 </html>

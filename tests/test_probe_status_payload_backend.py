@@ -11,6 +11,7 @@ from backend.cloudv2_telemetry import (
     parse_network_config_payload,
     parse_pivot_config_payload,
     parse_probe_status_payload,
+    parse_rush_config_payload,
 )
 
 
@@ -251,6 +252,50 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_rush_config_response_requires_prior_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            sent_messages = []
+            try:
+                store.queue_expected_pivots(["PivotA_1"], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", "#01-PivotA_1-discovery$", ts=1_773_171_001.0)
+
+                parsed, error = parse_device_payload("#04-PivotA_1-0800-1830-1$")
+                self.assertIsNone(error)
+                parsed_config = parse_rush_config_payload(parsed)
+                self.assertEqual(parsed_config["start_time_hhmm"], "0800")
+                self.assertEqual(parsed_config["end_time_hhmm"], "1830")
+                self.assertTrue(parsed_config["enabled"])
+
+                unsolicited = store.process_message(
+                    "cloudv2-config",
+                    "#04-PivotA_1-0800-1830-1$",
+                    ts=1_773_171_010.0,
+                )
+                self.assertTrue(unsolicited["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_011.0)
+                self.assertIsNone(snapshot["summary"]["rush_config"]["start_time_hhmm"])
+
+                store.set_pivot_config_sender(lambda topic, payload: sent_messages.append((topic, payload)) or True)
+                request = store.send_config_request("PivotA_1", idp="04")
+                self.assertEqual(request["payload"], "#04-PivotA_1$")
+                self.assertEqual(sent_messages, [("PivotA_1", "#04-PivotA_1$")])
+
+                response = store.process_message(
+                    "cloudv2-config",
+                    "#04-PivotA_1-0800-1830-1$",
+                    ts=request["request_ts"] + 1,
+                )
+                self.assertTrue(response["accepted"])
+                snapshot = store.get_pivot_snapshot("PivotA_1", now=request["request_ts"] + 2)
+                config = snapshot["summary"]["rush_config"]
+                self.assertEqual(config["start_time_hhmm"], "0800")
+                self.assertEqual(config["end_time_hhmm"], "1830")
+                self.assertTrue(config["enabled"])
+                self.assertFalse(config["pending"])
+            finally:
+                store.stop()
+
     def test_config_update_sends_full_payload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)
@@ -282,14 +327,25 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                         "read_time": "10",
                     },
                 )
+                rush = store.send_config_update(
+                    "PivotA_1",
+                    idp="04",
+                    values={
+                        "start_time_hhmm": "0800",
+                        "end_time_hhmm": "1830",
+                        "enabled": "1",
+                    },
+                )
 
                 self.assertEqual(network["payload"], "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$")
                 self.assertEqual(pivot["payload"], "#03-PivotA_1-NA-NA-600-2-5-10$")
+                self.assertEqual(rush["payload"], "#04-PivotA_1-0800-1830-1$")
                 self.assertEqual(
                     sent_messages,
                     [
                         ("PivotA_1", "#02-PivotA_1-PivotA_1-virtueyes.com.br-Pivo_A-soiltech$"),
                         ("PivotA_1", "#03-PivotA_1-NA-NA-600-2-5-10$"),
+                        ("PivotA_1", "#04-PivotA_1-0800-1830-1$"),
                     ],
                 )
             finally:

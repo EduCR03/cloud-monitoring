@@ -322,6 +322,34 @@ def parse_network_config_payload(parsed):
     }
 
 
+def _parse_config_bool(value):
+    text = _normalize_text(value).lower()
+    if text in ("1", "true", "sim", "yes", "on"):
+        return True
+    if text in ("0", "false", "nao", "não", "no", "off"):
+        return False
+    return None
+
+
+def parse_rush_config_payload(parsed):
+    if not isinstance(parsed, dict):
+        return None
+
+    raw_idp = str(parsed.get("idp") or "").strip()
+    if raw_idp not in ("4", "04"):
+        return None
+
+    parts = parsed.get("parts")
+    if not isinstance(parts, list) or len(parts) < 5:
+        return None
+
+    return {
+        "start_time_hhmm": _normalize_text(parts[2]),
+        "end_time_hhmm": _normalize_text(parts[3]),
+        "enabled": _parse_config_bool(parts[4]),
+    }
+
+
 PIVOT_CONFIG_VALUE_KEYS = (
     "contactor",
     "pressure",
@@ -331,6 +359,7 @@ PIVOT_CONFIG_VALUE_KEYS = (
     "read_time",
 )
 NETWORK_CONFIG_VALUE_KEYS = ("gprs_id", "modem_apn", "wifi_ssid", "wifi_pass")
+RUSH_CONFIG_VALUE_KEYS = ("start_time_hhmm", "end_time_hhmm", "enabled")
 
 
 def _new_pivot_config_state():
@@ -357,6 +386,20 @@ def _new_network_config_state():
         "last_response_payload": None,
     }
     for key in NETWORK_CONFIG_VALUE_KEYS:
+        state[key] = None
+    return state
+
+
+def _new_rush_config_state():
+    state = {
+        "last_request_ts": None,
+        "last_request_topic": None,
+        "last_request_payload": None,
+        "last_response_ts": None,
+        "last_response_topic": None,
+        "last_response_payload": None,
+    }
+    for key in RUSH_CONFIG_VALUE_KEYS:
         state[key] = None
     return state
 
@@ -395,6 +438,37 @@ def _normalize_network_config_state(value):
     return normalized
 
 
+def _normalize_rush_config_state(value):
+    normalized = _new_rush_config_state()
+    if not isinstance(value, dict):
+        return normalized
+
+    normalized["last_request_ts"] = _safe_float(value.get("last_request_ts"), None)
+    normalized["last_response_ts"] = _safe_float(value.get("last_response_ts"), None)
+    normalized["last_request_topic"] = _normalize_text(value.get("last_request_topic")) or None
+    normalized["last_request_payload"] = _normalize_text(value.get("last_request_payload")) or None
+    normalized["last_response_topic"] = _normalize_text(value.get("last_response_topic")) or None
+    normalized["last_response_payload"] = _normalize_text(value.get("last_response_payload")) or None
+    normalized["start_time_hhmm"] = _normalize_text(value.get("start_time_hhmm")) or None
+    normalized["end_time_hhmm"] = _normalize_text(value.get("end_time_hhmm")) or None
+    normalized["enabled"] = _parse_config_bool(value.get("enabled"))
+    return normalized
+
+
+SUPPORTED_CONFIG_IDPS = ("02", "03", "04")
+
+
+def _config_state_spec(idp):
+    normalized = str(idp or "").strip().zfill(2)
+    if normalized == "02":
+        return ("network_config", parse_network_config_payload, _normalize_network_config_state)
+    if normalized == "03":
+        return ("pivot_config", parse_pivot_config_payload, _normalize_pivot_config_state)
+    if normalized == "04":
+        return ("rush_config", parse_rush_config_payload, _normalize_rush_config_state)
+    return (None, None, None)
+
+
 def _validate_config_payload_field(value, field_name):
     text = _normalize_text(value)
     if not text or text == "-":
@@ -412,6 +486,25 @@ def _validate_config_payload_int(value, field_name, min_value=0, max_value=255):
     if parsed < min_value or parsed > max_value:
         raise ValueError(f"{field_name} fora do limite")
     return parsed
+
+
+def _validate_config_payload_hhmm(value, field_name):
+    text = _validate_config_payload_field(value, field_name)
+    if not re.fullmatch(r"\d{1,4}", text):
+        raise ValueError(f"{field_name} deve ser HHMM")
+    normalized = text.zfill(4)
+    hour = _safe_int(normalized[:2], None)
+    minute = _safe_int(normalized[2:], None)
+    if hour is None or minute is None or hour > 23 or minute > 59:
+        raise ValueError(f"{field_name} invalido")
+    return normalized
+
+
+def _validate_config_payload_bool(value, field_name):
+    parsed = _parse_config_bool(value)
+    if parsed is None:
+        raise ValueError(f"{field_name} deve ser 0 ou 1")
+    return "1" if parsed else "0"
 
 
 def _parse_version_triplet(value):
@@ -2040,6 +2133,7 @@ class TelemetryStore:
         pivot["drop_events"] = self._build_drop_events_from_cloud2_locked(cloud2_events)
         pivot["pivot_config"] = _normalize_pivot_config_state(summary.get("pivot_config"))
         pivot["network_config"] = _normalize_network_config_state(summary.get("network_config"))
+        pivot["rush_config"] = _normalize_rush_config_state(summary.get("rush_config"))
 
         status_summary = summary.get("status") if isinstance(summary.get("status"), dict) else {}
         quality_summary = summary.get("quality") if isinstance(summary.get("quality"), dict) else {}
@@ -2711,6 +2805,12 @@ class TelemetryStore:
                 str(_validate_config_payload_int(safe_values.get("off_time"), "off_time", 0, 255)),
                 str(_validate_config_payload_int(safe_values.get("read_time"), "read_time", 0, 255)),
             ]
+        elif idp == "04":
+            fields = [
+                _validate_config_payload_hhmm(safe_values.get("start_time_hhmm"), "start_time_hhmm"),
+                _validate_config_payload_hhmm(safe_values.get("end_time_hhmm"), "end_time_hhmm"),
+                _validate_config_payload_bool(safe_values.get("enabled"), "enabled"),
+            ]
         else:
             raise ValueError("idp de configuracao nao suportado")
         return f"#{idp}-{pivot_id}-{'-'.join(fields)}$"
@@ -2722,7 +2822,7 @@ class TelemetryStore:
         if not validate_pivot_id(normalized_pivot):
             raise ValueError("pivot_id invalido")
         normalized_idp = str(idp or "").strip().zfill(2)
-        if normalized_idp not in ("02", "03"):
+        if normalized_idp not in SUPPORTED_CONFIG_IDPS:
             raise ValueError("idp de configuracao nao suportado")
 
         sender = self._pivot_config_sender
@@ -2774,7 +2874,7 @@ class TelemetryStore:
         if not validate_pivot_id(normalized_pivot):
             raise ValueError("pivot_id invalido")
         normalized_idp = str(idp or "").strip().zfill(2)
-        if normalized_idp not in ("02", "03"):
+        if normalized_idp not in SUPPORTED_CONFIG_IDPS:
             raise ValueError("idp de configuracao nao suportado")
 
         sender = self._pivot_config_sender
@@ -2795,8 +2895,7 @@ class TelemetryStore:
         with self._lock:
             pivot = self._ensure_known_pivot_for_command_locked(normalized_pivot, request_ts)
             if pivot is not None:
-                state_key = "network_config" if normalized_idp == "02" else "pivot_config"
-                normalizer = _normalize_network_config_state if normalized_idp == "02" else _normalize_pivot_config_state
+                state_key, _, normalizer = _config_state_spec(normalized_idp)
                 config_state = normalizer(pivot.get(state_key))
                 config_state["last_request_ts"] = request_ts
                 config_state["last_request_topic"] = normalized_pivot
@@ -3006,6 +3105,7 @@ class TelemetryStore:
             },
             "pivot_config": _new_pivot_config_state(),
             "network_config": _new_network_config_state(),
+            "rush_config": _new_rush_config_state(),
             "status_cache": {
                 "code": "gray",
                 "reason": "Aguardando amostras iniciais de cloudv2.",
@@ -3088,6 +3188,11 @@ class TelemetryStore:
         baseline_network_config = summary.get("network_config")
         if isinstance(baseline_network_config, dict) and baseline_network_config:
             pivot["network_config"] = _normalize_network_config_state(baseline_network_config)
+            changed = True
+
+        baseline_rush_config = summary.get("rush_config")
+        if isinstance(baseline_rush_config, dict) and baseline_rush_config:
+            pivot["rush_config"] = _normalize_rush_config_state(baseline_rush_config)
             changed = True
 
         probe = pivot.get("probe")
@@ -3511,14 +3616,11 @@ class TelemetryStore:
     def _record_pivot_config_locked(self, pivot, parsed, topic, ts, raw_payload=None):
         normalized_topic = str(topic or "").strip()
         raw_idp = str((parsed or {}).get("idp") or "").strip().zfill(2)
-        if raw_idp == "02":
-            parsed_config = parse_network_config_payload(parsed)
-            state_key = "network_config"
-            normalizer = _normalize_network_config_state
-        else:
-            parsed_config = parse_pivot_config_payload(parsed)
-            state_key = "pivot_config"
-            normalizer = _normalize_pivot_config_state
+        state_key, parser, normalizer = _config_state_spec(raw_idp)
+        if not state_key or parser is None or normalizer is None:
+            self._record_generic_topic_locked(pivot, parsed, normalized_topic, ts, raw_payload=raw_payload)
+            return False
+        parsed_config = parser(parsed)
         config_state = normalizer(pivot.get(state_key))
         pivot[state_key] = config_state
 
@@ -4599,6 +4701,15 @@ class TelemetryStore:
         network_config_summary["pending"] = net_last_request_ts is not None and (
             net_last_response_ts is None or net_last_response_ts < net_last_request_ts
         )
+        rush_config = _normalize_rush_config_state(pivot.get("rush_config"))
+        rush_config_summary = dict(rush_config)
+        rush_config_summary["last_request_at"] = _ts_to_str(rush_config.get("last_request_ts"))
+        rush_config_summary["last_response_at"] = _ts_to_str(rush_config.get("last_response_ts"))
+        rush_last_request_ts = _safe_float(rush_config.get("last_request_ts"), None)
+        rush_last_response_ts = _safe_float(rush_config.get("last_response_ts"), None)
+        rush_config_summary["pending"] = rush_last_request_ts is not None and (
+            rush_last_response_ts is None or rush_last_response_ts < rush_last_request_ts
+        )
 
         return {
             "pivot_id": pivot["pivot_id"],
@@ -4699,6 +4810,7 @@ class TelemetryStore:
             },
             "pivot_config": pivot_config_summary,
             "network_config": network_config_summary,
+            "rush_config": rush_config_summary,
         }
 
     def _build_pivot_snapshot_locked(self, pivot, now):
@@ -4960,6 +5072,10 @@ class TelemetryStore:
                         modem_reset["last_ack_idp"] = raw_modem_reset.get("last_ack_idp")
                         modem_reset["command_count"] = _safe_int(raw_modem_reset.get("command_count"), 0) or 0
                         modem_reset["ack_count"] = _safe_int(raw_modem_reset.get("ack_count"), 0) or 0
+
+                    pivot["network_config"] = _normalize_network_config_state(raw_pivot.get("network_config"))
+                    pivot["pivot_config"] = _normalize_pivot_config_state(raw_pivot.get("pivot_config"))
+                    pivot["rush_config"] = _normalize_rush_config_state(raw_pivot.get("rush_config"))
 
                     raw_status = raw_pivot.get("status_cache")
                     if isinstance(raw_status, dict):

@@ -186,6 +186,12 @@ const ui = HAS_DOM
       pivotConfigOnTime: document.getElementById("pivotConfigOnTime"),
       pivotConfigOffTime: document.getElementById("pivotConfigOffTime"),
       pivotConfigReadTime: document.getElementById("pivotConfigReadTime"),
+      requestRushConfigBtn: document.getElementById("requestRushConfigBtn"),
+      sendRushConfigBtn: document.getElementById("sendRushConfigBtn"),
+      rushConfigHint: document.getElementById("rushConfigHint"),
+      rushConfigStartTime: document.getElementById("rushConfigStartTime"),
+      rushConfigEndTime: document.getElementById("rushConfigEndTime"),
+      rushConfigEnabled: document.getElementById("rushConfigEnabled"),
     }
   : {};
 
@@ -3408,6 +3414,12 @@ function getSelectedNetworkConfig() {
   return config || {};
 }
 
+function getSelectedRushConfig() {
+  const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
+  const config = summary && typeof summary.rush_config === "object" ? summary.rush_config : {};
+  return config || {};
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3448,6 +3460,9 @@ function wireProtectedEditableInputs() {
     ui.pivotConfigOnTime,
     ui.pivotConfigOffTime,
     ui.pivotConfigReadTime,
+    ui.rushConfigStartTime,
+    ui.rushConfigEndTime,
+    ui.rushConfigEnabled,
   ].filter(Boolean);
 
   protectedInputs.forEach((input) => {
@@ -3510,6 +3525,7 @@ function renderNetworkConfigModal() {
 
 function renderSettingsModalContent() {
   const config = getSelectedPivotConfig();
+  const rushConfig = getSelectedRushConfig();
   renderNetworkConfigModal();
   setPivotConfigField(ui.pivotConfigContactor, config.contactor);
   setPivotConfigField(ui.pivotConfigPressure, config.pressure);
@@ -3523,6 +3539,15 @@ function renderSettingsModalContent() {
   }
   renderConfigRequestButton(ui.requestPivotConfigBtn, "03");
   renderConfigSendButton(ui.sendPivotConfigBtn, "03");
+
+  setPivotConfigField(ui.rushConfigStartTime, rushConfig.start_time_hhmm);
+  setPivotConfigField(ui.rushConfigEndTime, rushConfig.end_time_hhmm);
+  setPivotConfigField(ui.rushConfigEnabled, rushConfig.enabled === null || rushConfig.enabled === undefined ? null : (rushConfig.enabled ? "1" : "0"));
+  if (ui.rushConfigHint) {
+    ui.rushConfigHint.textContent = resolveConfigHintText(rushConfig);
+  }
+  renderConfigRequestButton(ui.requestRushConfigBtn, "04");
+  renderConfigSendButton(ui.sendRushConfigBtn, "04");
 }
 
 function openSettingsModal() {
@@ -5476,6 +5501,13 @@ function readConfigValues(idp) {
       wifi_pass: readConfigInputValue(ui.networkConfigWifiPass),
     };
   }
+  if (idp === "04") {
+    return {
+      start_time_hhmm: readConfigInputValue(ui.rushConfigStartTime),
+      end_time_hhmm: readConfigInputValue(ui.rushConfigEndTime),
+      enabled: readConfigInputValue(ui.rushConfigEnabled),
+    };
+  }
   return {
     contactor: readConfigInputValue(ui.pivotConfigContactor),
     pressure: readConfigInputValue(ui.pivotConfigPressure),
@@ -5489,8 +5521,20 @@ function readConfigValues(idp) {
 function markConfigInputsClean(idp) {
   const inputs = idp === "02"
     ? [ui.networkConfigGprsId, ui.networkConfigModemApn, ui.networkConfigWifiSsid, ui.networkConfigWifiPass]
-    : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
+    : idp === "04"
+      ? [ui.rushConfigStartTime, ui.rushConfigEndTime, ui.rushConfigEnabled]
+      : [ui.pivotConfigContactor, ui.pivotConfigPressure, ui.pivotConfigPressurizationTime, ui.pivotConfigOnTime, ui.pivotConfigOffTime, ui.pivotConfigReadTime];
   inputs.forEach(markEditableInputClean);
+}
+
+function getConfigActionButtons(idp) {
+  if (idp === "02") {
+    return { request: ui.requestNetworkConfigBtn, send: ui.sendNetworkConfigBtn };
+  }
+  if (idp === "04") {
+    return { request: ui.requestRushConfigBtn, send: ui.sendRushConfigBtn };
+  }
+  return { request: ui.requestPivotConfigBtn, send: ui.sendPivotConfigBtn };
 }
 
 async function sendSelectedPivotConfig(idp = "03") {
@@ -5523,8 +5567,9 @@ async function sendSelectedPivotConfig(idp = "03") {
     showToast(message || "Não foi possível enviar a configuração.", "error", 4200);
   } finally {
     state.configSendInFlightByIdp[normalizedIdp] = false;
-    renderConfigRequestButton(normalizedIdp === "02" ? ui.requestNetworkConfigBtn : ui.requestPivotConfigBtn, normalizedIdp);
-    renderConfigSendButton(normalizedIdp === "02" ? ui.sendNetworkConfigBtn : ui.sendPivotConfigBtn, normalizedIdp);
+    const buttons = getConfigActionButtons(normalizedIdp);
+    renderConfigRequestButton(buttons.request, normalizedIdp);
+    renderConfigSendButton(buttons.send, normalizedIdp);
   }
 }
 
@@ -6196,6 +6241,12 @@ function wireEvents() {
   }
   if (ui.sendPivotConfigBtn) {
     ui.sendPivotConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("03"));
+  }
+  if (ui.requestRushConfigBtn) {
+    ui.requestRushConfigBtn.addEventListener("click", () => requestSelectedPivotConfig("04"));
+  }
+  if (ui.sendRushConfigBtn) {
+    ui.sendRushConfigBtn.addEventListener("click", () => sendSelectedPivotConfig("04"));
   }
   if (ui.settingsModal) {
     ui.settingsModal.addEventListener("click", (event) => {
