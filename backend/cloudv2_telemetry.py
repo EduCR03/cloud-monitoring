@@ -47,6 +47,7 @@ SUMMARY_CARDS_HISTORY_BUCKET_SEC = 3600
 SHUTDOWN_HISTORY_WINDOW_SEC = 30 * 24 * 3600
 SHUTDOWN_HISTORY_MAX_ITEMS = 500
 DYNAMIC_PIVOT_TOPIC_IGNORED_IDPS = {"11", "20"}
+INTERNAL_PROBE_TOPIC = "cloudv2-probe"
 
 STATUS_LABELS = {
     "green": "Online",
@@ -281,6 +282,28 @@ def extract_payload_idp_key(payload):
         return ""
     raw_idp = core.split("-", 1)[0].strip()
     return normalize_idp_key(raw_idp)
+
+
+def _move_internal_probe_event_out_of_pivot_topic(event, pivot_id):
+    if not isinstance(event, dict):
+        return event
+
+    event_type = str(event.get("type") or "").strip()
+    if event_type not in ("probe_sent", "probe_timeout"):
+        return event
+
+    details = event.get("details") if isinstance(event.get("details"), dict) else {}
+    raw_payload = str(details.get("raw_payload") or event.get("payload") or "").strip()
+    if extract_payload_idp_key(raw_payload) != "11":
+        return event
+
+    normalized_pivot_id = str(pivot_id or "").strip()
+    if event.get("topic") == normalized_pivot_id:
+        event["topic"] = INTERNAL_PROBE_TOPIC
+    if details.get("source_topic") == normalized_pivot_id:
+        details["source_topic"] = INTERNAL_PROBE_TOPIC
+        event["details"] = details
+    return event
 
 
 def parse_ping_rssi(parsed):
@@ -4503,7 +4526,7 @@ class TelemetryStore:
         self._record_timeline_locked(
             pivot,
             event_type="probe_sent",
-            topic=pivot["pivot_id"],
+            topic=INTERNAL_PROBE_TOPIC,
             ts=ts,
             summary="Probe #11$ enviado no topico dinamico do pivot.",
             details={
@@ -4511,7 +4534,7 @@ class TelemetryStore:
                 "deadline_ts": deadline_ts,
                 "deadline_at": _ts_to_str(deadline_ts),
             },
-            source_topic=pivot["pivot_id"],
+            source_topic=INTERNAL_PROBE_TOPIC,
             raw_payload="#11$",
         )
         self.log.info("Probe #11$ enviado: pivot_id=%s", pivot["pivot_id"])
@@ -4546,14 +4569,14 @@ class TelemetryStore:
         self._record_timeline_locked(
             pivot,
             event_type="probe_timeout",
-            topic=pivot["pivot_id"],
+            topic=INTERNAL_PROBE_TOPIC,
             ts=now,
             summary="Probe #11$ sem resposta dentro da janela esperada.",
             details={
                 "sent_ts": pending_sent_ts,
                 "deadline_ts": pending_deadline_ts,
             },
-            source_topic=pivot["pivot_id"],
+            source_topic=INTERNAL_PROBE_TOPIC,
             raw_payload="#11$",
         )
 
@@ -5582,7 +5605,10 @@ class TelemetryStore:
         _refresh_timestamp_field(last_cloud2)
 
         timeline = sorted(
-            _clone_timestamped_items(pivot.get("timeline", [])),
+            [
+                _move_internal_probe_event_out_of_pivot_topic(item, pivot["pivot_id"])
+                for item in _clone_timestamped_items(pivot.get("timeline", []))
+            ],
             key=lambda item: _safe_float(item.get("ts"), 0),
             reverse=True,
         )

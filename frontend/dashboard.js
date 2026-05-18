@@ -1849,6 +1849,13 @@ function resolveConnectivityEventIdp(event) {
   return match ? normalizeConnectivityEventIdp(match[1]) : "";
 }
 
+function isIgnoredPivotTopicEvent(event) {
+  const idp = resolveConnectivityEventIdp(event);
+  if (idp === "11" || idp === "20") return true;
+  const eventType = text((event || {}).type, "").trim();
+  return eventType === "probe_sent" || eventType === "probe_timeout";
+}
+
 function normalizeConnectivityEventTopicFilter(filterKey) {
   const normalized = text(filterKey, "global").trim();
   return CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS.has(normalized) ? normalized : "global";
@@ -1863,8 +1870,7 @@ function eventMatchesConnectivityTopicFilter(event, pivot, filterKey) {
   const sourceTopic = resolveConnectivityEventSourceTopic(event);
 
   if (key === "pivot") {
-    const idp = resolveConnectivityEventIdp(event);
-    if (idp === "11" || idp === "20") return false;
+    if (isIgnoredPivotTopicEvent(event)) return false;
     return !!pivotId && (eventTopic === pivotId || sourceTopic === pivotId);
   }
   return eventTopic === key || sourceTopic === key;

@@ -188,6 +188,32 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_probe_sent_events_do_not_match_dynamic_pivot_topic(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            try:
+                pivot_id = "PivotA_1"
+                store.queue_expected_pivots([pivot_id], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", f"#01-{pivot_id}-discovery$", ts=1_773_171_001.0)
+
+                pivot = store.pivots[pivot_id]
+                with store._lock:
+                    store._record_probe_sent_locked(pivot, 1_773_171_010.0)
+
+                snapshot = store.get_pivot_snapshot(pivot_id, now=1_773_171_020.0)
+                probe_events = [
+                    item
+                    for item in snapshot["timeline"]
+                    if item.get("type") == "probe_sent"
+                ]
+                self.assertTrue(probe_events)
+                self.assertTrue(all(item.get("topic") != pivot_id for item in probe_events))
+                self.assertTrue(
+                    all(item.get("details", {}).get("source_topic") != pivot_id for item in probe_events)
+                )
+            finally:
+                store.stop()
+
     def test_pivot_config_response_requires_prior_request(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)
@@ -728,7 +754,7 @@ class ProbeStatusPayloadTests(unittest.TestCase):
                 self.assertEqual(sent_messages, [("PivotA_1", "#11$")])
                 snapshot = store.get_pivot_snapshot("PivotA_1", now=1_773_171_020.0)
                 probe_sent = next(item for item in snapshot["timeline"] if item.get("type") == "probe_sent")
-                self.assertEqual(probe_sent["topic"], "PivotA_1")
+                self.assertEqual(probe_sent["topic"], "cloudv2-probe")
                 self.assertEqual(probe_sent["details"]["raw_payload"], "#11$")
             finally:
                 store.stop()
