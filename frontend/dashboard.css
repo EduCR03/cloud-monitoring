@@ -2012,6 +2012,19 @@ a:focus {
   font-size: 22px;
 }
 
+.settings-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-title-row span {
+  color: #5d7669;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .icon-close {
   width: 34px;
   height: 34px;

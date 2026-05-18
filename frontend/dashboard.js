@@ -320,6 +320,7 @@ const state = {
   bulkPivotActionInFlight: false,
   configRequestInFlightByIdp: {},
   configSendInFlightByIdp: {},
+  configSessionRequestsByKey: {},
 };
 
 const API_REQUEST_TIMEOUT_MS = 20000;
@@ -3493,6 +3494,52 @@ function getSelectedCommMainModeConfig() {
   return config || {};
 }
 
+function normalizeConfigIdp(idp) {
+  return String(idp || "03").trim().padStart(2, "0");
+}
+
+function getSelectedConfigByIdp(idp) {
+  const normalizedIdp = normalizeConfigIdp(idp);
+  if (normalizedIdp === "02") return getSelectedNetworkConfig();
+  if (normalizedIdp === "04") return getSelectedRushConfig();
+  if (normalizedIdp === "05") return getSelectedSectorConfig();
+  if (normalizedIdp === "22") return getSelectedPhysicalBarrierConfig();
+  if (normalizedIdp === "24") return getSelectedRebootConfig();
+  if (normalizedIdp === "26") return getSelectedVirtualBarrierConfig();
+  if (normalizedIdp === "31") return getSelectedCommMainModeConfig();
+  return getSelectedPivotConfig();
+}
+
+function getConfigSessionKey(pivotId, idp) {
+  const safePivotId = String(pivotId || "").trim();
+  if (!safePivotId) return "";
+  return `${safePivotId}::${normalizeConfigIdp(idp)}`;
+}
+
+function rememberConfigSessionRequest(pivotId, idp, requestTs) {
+  const key = getConfigSessionKey(pivotId, idp);
+  const safeTs = Number(requestTs);
+  if (!key || !Number.isFinite(safeTs) || safeTs <= 0) return;
+  state.configSessionRequestsByKey[key] = safeTs;
+}
+
+function getConfigSessionRequestTs(idp) {
+  const key = getConfigSessionKey(state.selectedPivot, idp);
+  const requestTs = Number(key ? state.configSessionRequestsByKey[key] : 0);
+  return Number.isFinite(requestTs) ? requestTs : 0;
+}
+
+function hasConfigSessionResponse(idp, config = null) {
+  const pivotId = String(state.selectedPivot || "").trim();
+  if (!pivotId) return false;
+  const requestTs = getConfigSessionRequestTs(idp);
+  if (requestTs <= 0) return false;
+  const safeConfig = config && typeof config === "object" ? config : getSelectedConfigByIdp(idp);
+  const responseTs = Number(safeConfig.last_response_ts);
+  if (!Number.isFinite(responseTs) || responseTs <= 0) return false;
+  return responseTs + 0.001 >= requestTs && !safeConfig.pending;
+}
+
 function setPivotConfigField(element, value) {
   if (!element) return;
   if (shouldPreserveEditableInput(element)) return;
@@ -3638,16 +3685,20 @@ function resolveConfigHintText(config) {
 function renderConfigRequestButton(button, idp) {
   if (!button) return;
   const pivotId = String(state.selectedPivot || "").trim();
-  const inFlight = !!state.configRequestInFlightByIdp[idp];
+  const normalizedIdp = normalizeConfigIdp(idp);
+  const inFlight = !!state.configRequestInFlightByIdp[normalizedIdp];
   button.disabled = !pivotId || inFlight;
   button.textContent = inFlight ? "Pedindo..." : "Pedir configuração";
 }
 
-function renderConfigSendButton(button, idp) {
+function renderConfigSendButton(button, idp, config = null) {
   if (!button) return;
   const pivotId = String(state.selectedPivot || "").trim();
-  const inFlight = !!state.configSendInFlightByIdp[idp];
-  button.disabled = !pivotId || inFlight;
+  const normalizedIdp = normalizeConfigIdp(idp);
+  const inFlight = !!state.configSendInFlightByIdp[normalizedIdp];
+  const ready = hasConfigSessionResponse(normalizedIdp, config);
+  button.disabled = !pivotId || inFlight || !ready;
+  button.title = ready ? "" : "Peca a configuracao e aguarde a resposta antes de configurar.";
   button.textContent = inFlight ? "Enviando..." : "Configurar";
 }
 
@@ -3661,7 +3712,7 @@ function renderNetworkConfigModal() {
     ui.networkConfigHint.textContent = resolveConfigHintText(config);
   }
   renderConfigRequestButton(ui.requestNetworkConfigBtn, "02");
-  renderConfigSendButton(ui.sendNetworkConfigBtn, "02");
+  renderConfigSendButton(ui.sendNetworkConfigBtn, "02", config);
 }
 
 function renderSettingsModalContent() {
@@ -3684,7 +3735,7 @@ function renderSettingsModalContent() {
     ui.pivotConfigHint.textContent = resolveConfigHintText(config);
   }
   renderConfigRequestButton(ui.requestPivotConfigBtn, "03");
-  renderConfigSendButton(ui.sendPivotConfigBtn, "03");
+  renderConfigSendButton(ui.sendPivotConfigBtn, "03", config);
 
   setPivotConfigField(ui.rushConfigStartTime, rushConfig.start_time_hhmm);
   setPivotConfigField(ui.rushConfigEndTime, rushConfig.end_time_hhmm);
@@ -3693,7 +3744,7 @@ function renderSettingsModalContent() {
     ui.rushConfigHint.textContent = resolveConfigHintText(rushConfig);
   }
   renderConfigRequestButton(ui.requestRushConfigBtn, "04");
-  renderConfigSendButton(ui.sendRushConfigBtn, "04");
+  renderConfigSendButton(ui.sendRushConfigBtn, "04", rushConfig);
 
   setSectorConfigCount(sectorConfig.sector_number);
   const sectors = Array.isArray(sectorConfig.sectors) ? sectorConfig.sectors : [];
@@ -3707,7 +3758,7 @@ function renderSettingsModalContent() {
     ui.sectorConfigHint.textContent = resolveConfigHintText(sectorConfig);
   }
   renderConfigRequestButton(ui.requestSectorConfigBtn, "05");
-  renderConfigSendButton(ui.sendSectorConfigBtn, "05");
+  renderConfigSendButton(ui.sendSectorConfigBtn, "05", sectorConfig);
 
   setPivotConfigField(ui.physicalBarrierStartAngle, physicalBarrierConfig.start_angle);
   setPivotConfigField(ui.physicalBarrierEndAngle, physicalBarrierConfig.end_angle);
@@ -3728,7 +3779,7 @@ function renderSettingsModalContent() {
     ui.physicalBarrierConfigHint.textContent = resolveConfigHintText(physicalBarrierConfig);
   }
   renderConfigRequestButton(ui.requestPhysicalBarrierConfigBtn, "22");
-  renderConfigSendButton(ui.sendPhysicalBarrierConfigBtn, "22");
+  renderConfigSendButton(ui.sendPhysicalBarrierConfigBtn, "22", physicalBarrierConfig);
 
   setPivotConfigField(ui.virtualBarrierStartAngle, virtualBarrierConfig.start_angle);
   setPivotConfigField(ui.virtualBarrierEndAngle, virtualBarrierConfig.end_angle);
@@ -3748,7 +3799,7 @@ function renderSettingsModalContent() {
     ui.virtualBarrierConfigHint.textContent = resolveConfigHintText(virtualBarrierConfig);
   }
   renderConfigRequestButton(ui.requestVirtualBarrierConfigBtn, "26");
-  renderConfigSendButton(ui.sendVirtualBarrierConfigBtn, "26");
+  renderConfigSendButton(ui.sendVirtualBarrierConfigBtn, "26", virtualBarrierConfig);
 
   setPivotConfigField(
     ui.rebootConfigEnabled,
@@ -3761,14 +3812,14 @@ function renderSettingsModalContent() {
     ui.rebootConfigHint.textContent = resolveConfigHintText(rebootConfig);
   }
   renderConfigRequestButton(ui.requestRebootConfigBtn, "24");
-  renderConfigSendButton(ui.sendRebootConfigBtn, "24");
+  renderConfigSendButton(ui.sendRebootConfigBtn, "24", rebootConfig);
 
   setCommMainModeConfigValue(commMainModeConfig.comm_main_mode);
   if (ui.commMainModeConfigHint) {
     ui.commMainModeConfigHint.textContent = resolveConfigHintText(commMainModeConfig);
   }
   renderConfigRequestButton(ui.requestCommMainModeConfigBtn, "31");
-  renderConfigSendButton(ui.sendCommMainModeConfigBtn, "31");
+  renderConfigSendButton(ui.sendCommMainModeConfigBtn, "31", commMainModeConfig);
 }
 
 function openSettingsModal() {
@@ -6097,7 +6148,7 @@ async function resetSelectedPivotModem() {
 }
 
 async function requestSelectedPivotConfig(idp = "03") {
-  const normalizedIdp = String(idp || "03").padStart(2, "0");
+  const normalizedIdp = normalizeConfigIdp(idp);
   const pivotId = String(state.selectedPivot || "").trim();
   if (!pivotId || state.configRequestInFlightByIdp[normalizedIdp]) return;
 
@@ -6115,6 +6166,7 @@ async function requestSelectedPivotConfig(idp = "03") {
       throw new Error(data.error || data.message || `HTTP ${response.status}`);
     }
     showToast("Pedido de configuração enviado.", "success", 3200);
+    rememberConfigSessionRequest(pivotId, normalizedIdp, (data.request || {}).request_ts || Date.now() / 1000);
     await refreshPivot();
   } catch (err) {
     showToast("Não foi possível pedir a configuração.", "error", 4200);
@@ -6258,9 +6310,14 @@ function getConfigActionButtons(idp) {
 }
 
 async function sendSelectedPivotConfig(idp = "03") {
-  const normalizedIdp = String(idp || "03").padStart(2, "0");
+  const normalizedIdp = normalizeConfigIdp(idp);
   const pivotId = String(state.selectedPivot || "").trim();
   if (!pivotId || state.configSendInFlightByIdp[normalizedIdp]) return;
+  if (!hasConfigSessionResponse(normalizedIdp)) {
+    renderSettingsModalContent();
+    showToast("Peca a configuracao e aguarde a resposta antes de configurar.", "error", 4200);
+    return;
+  }
   const values = readConfigValues(normalizedIdp);
 
   state.configSendInFlightByIdp[normalizedIdp] = true;

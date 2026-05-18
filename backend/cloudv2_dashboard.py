@@ -251,6 +251,18 @@ def _build_handler(telemetry_store, reload_token_getter=None):
         )
     rate_limiter = InMemoryRateLimiter()
     auth_blocked = object()
+    config_session_lock = threading.Lock()
+    config_session_requests = {}
+    config_state_by_idp = {
+        "02": "network_config",
+        "03": "pivot_config",
+        "04": "rush_config",
+        "05": "sector_config",
+        "22": "physical_barrier_config",
+        "24": "reboot_config",
+        "26": "virtual_barrier_config",
+        "31": "comm_main_mode_config",
+    }
 
     page_aliases = {
         "/": "index.html",
@@ -582,6 +594,48 @@ def _build_handler(telemetry_store, reload_token_getter=None):
 
         def _can_manage_expected_pivots(self, auth_context):
             return _is_admin_auth_context(auth_context)
+
+        def _config_session_key(self, auth_context, pivot_id, idp):
+            normalized_user = str((auth_context or {}).get("session_user_id") or "").strip()
+            if not normalized_user:
+                normalized_user = self._get_raw_session_token()
+            normalized_pivot = str(pivot_id or "").strip()
+            normalized_idp = str(idp or "03").strip().zfill(2)
+            if not normalized_user or not normalized_pivot:
+                return ""
+            return f"{normalized_user}:{normalized_pivot}:{normalized_idp}"
+
+        def _remember_config_request(self, auth_context, pivot_id, idp, request_ts):
+            key = self._config_session_key(auth_context, pivot_id, idp)
+            try:
+                safe_ts = float(request_ts)
+            except (TypeError, ValueError):
+                safe_ts = 0.0
+            if not key or safe_ts <= 0:
+                return
+            with config_session_lock:
+                config_session_requests[key] = safe_ts
+
+        def _has_config_response_for_request(self, auth_context, pivot_id, idp):
+            normalized_idp = str(idp or "03").strip().zfill(2)
+            state_key = config_state_by_idp.get(normalized_idp)
+            if not state_key:
+                return False
+            key = self._config_session_key(auth_context, pivot_id, normalized_idp)
+            with config_session_lock:
+                request_ts = float(config_session_requests.get(key) or 0)
+            if request_ts <= 0:
+                return False
+            snapshot = telemetry_store.get_pivot_snapshot(str(pivot_id or "").strip())
+            summary = snapshot.get("summary") if isinstance(snapshot, dict) else {}
+            config_state = summary.get(state_key) if isinstance(summary, dict) else {}
+            if not isinstance(config_state, dict):
+                return False
+            try:
+                response_ts = float(config_state.get("last_response_ts") or 0)
+            except (TypeError, ValueError):
+                response_ts = 0.0
+            return response_ts + 0.001 >= request_ts and not bool(config_state.get("pending"))
 
         def _check_rate_limit(self, path):
             if auth_rate_limit_disabled:
@@ -1458,6 +1512,7 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                     self._write_json(503, {"error": str(exc)})
                     return
 
+                self._remember_config_request(auth_context, pivot_id, result.get("idp") or idp, result.get("request_ts"))
                 self._write_json(200, {"ok": True, "request": result})
                 return
 
@@ -1474,6 +1529,16 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                     return
 
                 idp = str(body.get("idp") or "03").strip()
+                if not self._has_config_response_for_request(auth_context, pivot_id, idp):
+                    self._write_json(
+                        409,
+                        {
+                            "ok": False,
+                            "code": "config_request_required",
+                            "message": "Peca a configuracao e aguarde a resposta antes de configurar.",
+                        },
+                    )
+                    return
                 values = body.get("values") if isinstance(body.get("values"), dict) else {}
                 try:
                     result = telemetry_store.send_config_update(pivot_id, idp=idp, values=values)
