@@ -1825,6 +1825,30 @@ function resolveConnectivityEventRawPayload(event) {
   return "";
 }
 
+function normalizeConnectivityEventIdp(value) {
+  const raw = text(value, "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return String(Number(raw));
+  return raw;
+}
+
+function resolveConnectivityEventIdp(event) {
+  const details = (event || {}).details;
+  const detailsObj = details && typeof details === "object" ? details : {};
+  const directIdp = normalizeConnectivityEventIdp(detailsObj.idp);
+  if (directIdp) return directIdp;
+
+  const parsedPayload = detailsObj.parsed_payload;
+  if (parsedPayload && typeof parsedPayload === "object") {
+    const parsedIdp = normalizeConnectivityEventIdp(parsedPayload.idp);
+    if (parsedIdp) return parsedIdp;
+  }
+
+  const rawPayload = resolveConnectivityEventRawPayload(event);
+  const match = rawPayload.match(/^#([^-$.]+)/);
+  return match ? normalizeConnectivityEventIdp(match[1]) : "";
+}
+
 function normalizeConnectivityEventTopicFilter(filterKey) {
   const normalized = text(filterKey, "global").trim();
   return CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS.has(normalized) ? normalized : "global";
@@ -1839,6 +1863,8 @@ function eventMatchesConnectivityTopicFilter(event, pivot, filterKey) {
   const sourceTopic = resolveConnectivityEventSourceTopic(event);
 
   if (key === "pivot") {
+    const idp = resolveConnectivityEventIdp(event);
+    if (idp === "11" || idp === "20") return false;
     return !!pivotId && (eventTopic === pivotId || sourceTopic === pivotId);
   }
   return eventTopic === key || sourceTopic === key;

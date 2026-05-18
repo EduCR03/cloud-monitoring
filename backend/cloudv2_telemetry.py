@@ -46,6 +46,7 @@ SUMMARY_CARDS_HISTORY_WINDOW_SEC = 30 * 24 * 3600
 SUMMARY_CARDS_HISTORY_BUCKET_SEC = 3600
 SHUTDOWN_HISTORY_WINDOW_SEC = 30 * 24 * 3600
 SHUTDOWN_HISTORY_MAX_ITEMS = 500
+DYNAMIC_PIVOT_TOPIC_IGNORED_IDPS = {"11", "20"}
 
 STATUS_LABELS = {
     "green": "Online",
@@ -260,6 +261,26 @@ def parse_device_payload(payload):
         "parts": parts,
     }
     return parsed, None
+
+
+def normalize_idp_key(value):
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    if raw.isdigit():
+        return str(int(raw))
+    return raw
+
+
+def extract_payload_idp_key(payload):
+    text = str(payload or "").strip()
+    if not text.startswith("#") or not text.endswith("$"):
+        return ""
+    core = text[1:-1]
+    if not core:
+        return ""
+    raw_idp = core.split("-", 1)[0].strip()
+    return normalize_idp_key(raw_idp)
 
 
 def parse_ping_rssi(parsed):
@@ -1517,9 +1538,18 @@ class TelemetryStore:
             if modem_reset_ack is not None:
                 return modem_reset_ack
 
-            if topic not in self.monitor_topics:
+            topic_is_monitor = topic in self.monitor_topics
+            topic_may_be_dynamic_pivot = (not topic_is_monitor) and validate_pivot_id(topic)
+            if not topic_is_monitor and not topic_may_be_dynamic_pivot:
                 self.log.warning("Mensagem em topico nao monitorado descartada: topic=%s", topic)
                 return {"accepted": False, "reason": "topic nao monitorado"}
+
+            if topic_may_be_dynamic_pivot and extract_payload_idp_key(payload_text) in DYNAMIC_PIVOT_TOPIC_IGNORED_IDPS:
+                return {
+                    "accepted": False,
+                    "reason": "idp ignorado em topico dinamico",
+                    "pivot_id": topic,
+                }
 
             if self._is_duplicate_locked(topic, payload_text, ts):
                 self.duplicate_count += 1
@@ -1532,6 +1562,54 @@ class TelemetryStore:
                 return {"accepted": False, "reason": parse_error}
 
             pivot_id = parsed["pivot_id"]
+            dynamic_pivot_topic = topic_may_be_dynamic_pivot and pivot_id == topic
+
+            if topic_may_be_dynamic_pivot and not dynamic_pivot_topic:
+                self.log.warning(
+                    "Mensagem em topico dinamico descartada por pivot divergente: topic=%s pivot_id=%s",
+                    topic,
+                    pivot_id,
+                )
+                return {
+                    "accepted": False,
+                    "reason": "pivot divergente em topico dinamico",
+                    "pivot_id": pivot_id,
+                }
+
+            if dynamic_pivot_topic:
+                if normalize_idp_key(parsed.get("idp")) in DYNAMIC_PIVOT_TOPIC_IGNORED_IDPS:
+                    return {
+                        "accepted": False,
+                        "reason": "idp ignorado em topico dinamico",
+                        "pivot_id": pivot_id,
+                    }
+
+                pivot = self.pivots.get(pivot_id)
+                if pivot is None:
+                    self.log.info(
+                        "Mensagem em topico dinamico descartada para pivot nao autorizado: topic=%s pivot_id=%s",
+                        topic,
+                        pivot_id,
+                    )
+                    return {
+                        "accepted": False,
+                        "reason": "pivot nao autorizado",
+                        "pivot_id": pivot_id,
+                    }
+
+                self._record_message_common_locked(pivot, topic, ts)
+                self._record_generic_topic_locked(pivot, parsed, topic, ts, raw_payload=payload_text)
+                self._refresh_status_locked(pivot, ts)
+                self._prune_pivot_locked(pivot, ts)
+                self._persist_pivot_snapshot_locked(pivot, ts)
+                self._dirty = True
+                self._invalidate_api_caches_locked()
+                return {
+                    "accepted": True,
+                    "pivot_id": pivot_id,
+                    "event": topic,
+                    "session_id": pivot.get("session_id"),
+                }
 
             if topic == TOPIC_CLOUDV2:
                 pivot = self.pivots.get(pivot_id)
@@ -1994,6 +2072,10 @@ class TelemetryStore:
 
     def get_complete_panel(self, pivot_id, session_id=None, run_id=None, now=None):
         return self.get_pivot_snapshot(pivot_id, now=now, session_id=session_id, run_id=run_id)
+
+    def list_known_pivot_ids(self):
+        with self._lock:
+            return sorted(self.pivots.keys(), key=lambda item: str(item).lower())
 
     def get_quality_cards_snapshot(self, run_id=None, pivot_ids=None):
         normalized_run = str(run_id or "").strip() or None

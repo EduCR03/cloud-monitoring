@@ -56,6 +56,8 @@ telemetry = None
 dashboard_server = None
 mqtt_client = None
 mqtt_connected = threading.Event()
+dynamic_topic_lock = threading.Lock()
+subscribed_dynamic_topics = set()
 restart_requested = threading.Event()
 restart_reason = None
 dev_reload_token = str(int(time.time() * 1000))
@@ -174,6 +176,58 @@ def preparar_certificados():
         )
 
 
+def _subscribe_dynamic_topic(topic, *, reason="comando"):
+    normalized_topic = str(topic or "").strip()
+    if not normalized_topic:
+        return False
+    if normalized_topic in FIXED_MONITOR_TOPICS:
+        return False
+    if mqtt_client is None or not mqtt_connected.is_set():
+        logger.warning("MQTT ainda nao conectado para assinar topico dinamico %s.", normalized_topic)
+        return False
+
+    with dynamic_topic_lock:
+        if normalized_topic in subscribed_dynamic_topics:
+            return True
+
+    try:
+        subscribe_result = mqtt_client.subscribe(normalized_topic)
+        subscribe_rc = subscribe_result[0] if isinstance(subscribe_result, tuple) else getattr(subscribe_result, "rc", None)
+        if subscribe_rc != mqtt.MQTT_ERR_SUCCESS:
+            logger.warning(
+                "Falha ao assinar topico dinamico %s para %s (resultado=%s)",
+                normalized_topic,
+                reason,
+                subscribe_result,
+            )
+            return False
+        with dynamic_topic_lock:
+            subscribed_dynamic_topics.add(normalized_topic)
+        logger.info(
+            "Topico dinamico assinado para %s: %s (resultado=%s)",
+            reason,
+            normalized_topic,
+            subscribe_result,
+        )
+        return True
+    except Exception as exc:
+        logger.exception("Erro ao assinar topico dinamico %s para %s: %s", normalized_topic, reason, exc)
+        return False
+
+
+def _subscribe_known_dynamic_topics():
+    if telemetry is None:
+        return
+    try:
+        pivot_ids = telemetry.list_known_pivot_ids()
+    except Exception as exc:
+        logger.warning("Nao foi possivel listar topicos dinamicos conhecidos: %s", exc)
+        return
+
+    for pivot_id in pivot_ids:
+        _subscribe_dynamic_topic(pivot_id, reason="eventos do pivot_id")
+
+
 def _publish_payload_to_dynamic_topic(pivot_topic, payload, *, label="comando"):
     topic = str(pivot_topic or "").strip()
     if not topic:
@@ -187,6 +241,8 @@ def _publish_payload_to_dynamic_topic(pivot_topic, payload, *, label="comando"):
     if mqtt_client is None or not mqtt_connected.is_set():
         logger.warning("MQTT ainda nao conectado para publicar %s em %s.", label, topic)
         return False
+
+    _subscribe_dynamic_topic(topic, reason=label)
 
     try:
         result = mqtt_client.publish(topic, payload, qos=0, retain=False)
@@ -216,11 +272,7 @@ def _publish_modem_reset_to_dynamic_topic(pivot_topic, payload):
     if mqtt_client is None or not mqtt_connected.is_set():
         logger.warning("MQTT ainda nao conectado para publicar reset de modem em %s.", topic)
         return False
-    try:
-        subscribe_result = mqtt_client.subscribe(topic)
-        logger.info("Topico dinamico assinado para ACK de reset: %s (resultado=%s)", topic, subscribe_result)
-    except Exception as exc:
-        logger.exception("Erro ao assinar topico dinamico %s para ACK de reset: %s", topic, exc)
+    if not _subscribe_dynamic_topic(topic, reason="ACK de reset"):
         return False
     return _publish_payload_to_dynamic_topic(topic, payload, label="reset de modem")
 
@@ -232,9 +284,12 @@ def on_connect(client, userdata, flags, rc):
 
     mqtt_connected.set()
     logger.info("Conectado ao broker MQTT.")
+    with dynamic_topic_lock:
+        subscribed_dynamic_topics.clear()
     for topic in MONITOR_TOPICS:
         client.subscribe(topic)
         logger.info("Assinado em topico fixo: %s", topic)
+    _subscribe_known_dynamic_topics()
 
 
 def on_disconnect(client, userdata, rc):
@@ -250,7 +305,10 @@ def on_message(client, userdata, msg):
 
     try:
         if telemetry is not None:
-            telemetry.process_message(msg.topic, payload)
+            result = telemetry.process_message(msg.topic, payload)
+            pivot_id = str((result or {}).get("pivot_id") or "").strip()
+            if pivot_id and (result or {}).get("accepted"):
+                _subscribe_dynamic_topic(pivot_id, reason="pivot descoberto")
     except Exception as exc:
         logger.exception("Erro ao processar mensagem MQTT topic=%s: %s", msg.topic, exc)
 

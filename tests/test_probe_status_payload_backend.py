@@ -157,6 +157,37 @@ class ProbeStatusPayloadTests(unittest.TestCase):
             finally:
                 store.stop()
 
+    def test_dynamic_pivot_topic_records_all_idps_except_11_and_20(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = self._build_store(temp_dir)
+            try:
+                pivot_id = "PivotA_1"
+                store.queue_expected_pivots([pivot_id], now=1_773_171_000.0, source="test")
+                store.process_message("cloudv2", f"#01-{pivot_id}-discovery$", ts=1_773_171_001.0)
+
+                idp_01 = store.process_message(pivot_id, f"#01-{pivot_id}-payload$", ts=1_773_171_010.0)
+                idp_14 = store.process_message(pivot_id, f"#14-{pivot_id}-schedule-123$", ts=1_773_171_011.0)
+                idp_11 = store.process_message(pivot_id, "#11$", ts=1_773_171_012.0)
+                idp_20 = store.process_message(pivot_id, f"#20-{pivot_id}-ignored$", ts=1_773_171_013.0)
+
+                self.assertTrue(idp_01["accepted"])
+                self.assertTrue(idp_14["accepted"])
+                self.assertFalse(idp_11["accepted"])
+                self.assertFalse(idp_20["accepted"])
+
+                snapshot = store.get_pivot_snapshot(pivot_id, now=1_773_171_020.0)
+                payloads = [
+                    item.get("details", {}).get("raw_payload")
+                    for item in snapshot["timeline"]
+                    if item.get("topic") == pivot_id
+                ]
+                self.assertIn(f"#01-{pivot_id}-payload$", payloads)
+                self.assertIn(f"#14-{pivot_id}-schedule-123$", payloads)
+                self.assertNotIn("#11$", payloads)
+                self.assertNotIn(f"#20-{pivot_id}-ignored$", payloads)
+            finally:
+                store.stop()
+
     def test_pivot_config_response_requires_prior_request(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = self._build_store(temp_dir)
