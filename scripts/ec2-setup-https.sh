@@ -7,9 +7,9 @@ set -euo pipefail
 # Ele gera o bloco Caddyfile correto e valida backend, HTTPS e CORS.
 #
 # Uso:
-#   DOMAIN=back-cloud-monitor.duckdns.org bash scripts/ec2-setup-https.sh
+#   DOMAIN=sentinel.soiltech.com.br bash scripts/ec2-setup-https.sh
 # Ou:
-#   bash scripts/ec2-setup-https.sh back-cloud-monitor.duckdns.org
+#   bash scripts/ec2-setup-https.sh sentinel.soiltech.com.br
 #
 # Variaveis opcionais:
 #   BACKEND_UPSTREAM=http://127.0.0.1:8008
@@ -51,7 +51,7 @@ imds_get() {
 }
 
 if [ -z "${DOMAIN}" ]; then
-  fail "defina DOMAIN (ex.: back-cloud-monitor.duckdns.org)."
+  fail "defina DOMAIN (ex.: sentinel.soiltech.com.br)."
 fi
 
 if [[ "${BACKEND_UPSTREAM}" == */ ]]; then

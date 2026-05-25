@@ -6,7 +6,7 @@
 
   const LOCAL_STORAGE_KEY = "cloudv2.apiBaseUrl";
   const LOCAL_DEFAULT_API_BASE_URL = "http://127.0.0.1:8008";
-  const PRODUCTION_DEFAULT_API_BASE_URL = "https://back-cloud-monitor.duckdns.org";
+  const PRODUCTION_DEFAULT_API_BASE_URL = "https://sentinel.soiltech.com.br";
 
   function readLocalStorageOverride() {
     try {
