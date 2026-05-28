@@ -12,13 +12,15 @@ set -euo pipefail
 #   bash scripts/ec2-setup-https.sh sentinel.soiltech.com.br
 #
 # Variaveis opcionais:
-#   BACKEND_UPSTREAM=http://127.0.0.1:8008
+#   BACKEND_UPSTREAM=cloud-monitoring-backend:8008
+#   SANDBOX_PROXY_NETWORK=proxy-net
 #   HEALTH_PATH=/login
 #   FRONTEND_URL=https://cloud-monitoring.vercel.app
 #   CADDY_CONFIG_PATH=/caminho/para/Caddyfile
 
 DOMAIN="${DOMAIN:-${1:-}}"
-BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:8008}"
+BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-cloud-monitoring-backend:8008}"
+SANDBOX_PROXY_NETWORK="${SANDBOX_PROXY_NETWORK:-proxy-net}"
 HEALTH_PATH="${HEALTH_PATH:-/login}"
 FRONTEND_URL="${FRONTEND_URL:-https://cloud-monitoring.vercel.app}"
 CADDY_CONFIG_PATH="${CADDY_CONFIG_PATH:-}"
@@ -65,6 +67,7 @@ fi
 require_cmd curl
 require_cmd awk
 require_cmd getent
+require_cmd docker
 
 log "Validando resolucao DNS de ${DOMAIN}..."
 DOMAIN_IP="$(getent ahostsv4 "${DOMAIN}" | awk 'NR==1 {print $1}')"
@@ -76,11 +79,23 @@ if [ -n "${PUBLIC_IP}" ] && [ "${DOMAIN_IP}" != "${PUBLIC_IP}" ]; then
   fail "o dominio ${DOMAIN} aponta para ${DOMAIN_IP}, mas esta EC2 e ${PUBLIC_IP}."
 fi
 
-log "Verificando backend local em ${BACKEND_UPSTREAM}${HEALTH_PATH}..."
-if ! curl -fsS -m 8 "${BACKEND_UPSTREAM}${HEALTH_PATH}" >/dev/null; then
-  fail "backend local nao respondeu. Suba o container antes: docker compose up -d --build backend"
+log "Validando rede Docker ${SANDBOX_PROXY_NETWORK}..."
+if ! docker network inspect "${SANDBOX_PROXY_NETWORK}" >/dev/null 2>&1; then
+  fail "rede ${SANDBOX_PROXY_NETWORK} ausente. Crie com: docker network create ${SANDBOX_PROXY_NETWORK}"
 fi
-log "Backend local respondeu."
+
+log "Verificando backend dentro do container..."
+if ! docker inspect cloud-monitoring-backend >/dev/null 2>&1; then
+  fail "container cloud-monitoring-backend ausente. Suba antes: docker compose up -d --build backend"
+fi
+if ! docker inspect -f '{{range $name, $network := .NetworkSettings.Networks}}{{println $name}}{{end}}' cloud-monitoring-backend \
+    | grep -Fx "${SANDBOX_PROXY_NETWORK}" >/dev/null; then
+  fail "cloud-monitoring-backend nao esta conectado a ${SANDBOX_PROXY_NETWORK}."
+fi
+if ! docker compose exec -T backend curl -fsS -m 8 "http://127.0.0.1:8008${HEALTH_PATH}" >/dev/null; then
+  fail "backend nao respondeu no container. Verifique logs: docker compose logs --tail 80 backend"
+fi
+log "Backend respondeu e esta conectado a ${SANDBOX_PROXY_NETWORK}."
 
 cat > "${GENERATED_CADDYFILE}" <<EOF
 ${DOMAIN} {

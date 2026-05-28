@@ -20,6 +20,7 @@ RUN_HTTP_SMOKE="${RUN_HTTP_SMOKE:-1}"
 SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:8008}"
 SMOKE_REPORT_JSON="${SMOKE_REPORT_JSON:-/data/postgres-http-smoke-report.json}"
 MANIFEST_PATH="${MANIFEST_PATH:-/data/postgres-cutover-${CUTOVER_ID}.manifest.json}"
+SANDBOX_PROXY_NETWORK="${SANDBOX_PROXY_NETWORK:-proxy-net}"
 ENV_BACKUP=""
 BACKEND_STOPPED=0
 CUTOVER_DONE=0
@@ -33,6 +34,11 @@ fi
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker nao encontrado. Rode scripts/ec2-install-docker.sh primeiro." >&2
   exit 1
+fi
+
+export SANDBOX_PROXY_NETWORK
+if ! docker network inspect "${SANDBOX_PROXY_NETWORK}" >/dev/null 2>&1; then
+  docker network create "${SANDBOX_PROXY_NETWORK}"
 fi
 
 cd "${APP_DIR}"

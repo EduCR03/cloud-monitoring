@@ -26,8 +26,8 @@ services:
       dockerfile: Dockerfile
     container_name: cloud-monitoring-backend
     restart: unless-stopped
-    ports:
-      - "${BACKEND_BIND_ADDRESS:-0.0.0.0}:${BACKEND_PUBLIC_PORT:-8008}:8008"
+    expose:
+      - "8008"
     env_file:
       - .env.backend
     environment:
@@ -53,7 +53,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    networks:
+      - default
+      - proxy-net
 
 volumes:
   cloud_monitoring_data:
   cloud_monitoring_postgres_data:
+
+networks:
+  proxy-net:
+    external: true
+    name: "${SANDBOX_PROXY_NETWORK:-proxy-net}"

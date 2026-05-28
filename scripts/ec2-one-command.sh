@@ -5,8 +5,7 @@ APP_DIR="${APP_DIR:-$HOME/cloud-monitoring}"
 BRANCH="${BRANCH:-feat/aws-server}"
 REPO_URL="${REPO_URL:-https://github.com/Monitoramento-de-Conectividade/cloud-monitoring.git}"
 
-BACKEND_PUBLIC_PORT="${BACKEND_PUBLIC_PORT:-8008}"
-BACKEND_BIND_ADDRESS="${BACKEND_BIND_ADDRESS:-0.0.0.0}"
+SANDBOX_PROXY_NETWORK="${SANDBOX_PROXY_NETWORK:-proxy-net}"
 BROKER="${BROKER:-a19mijesri84u2-ats.iot.us-east-1.amazonaws.com}"
 MQTT_PORT="${MQTT_PORT:-8883}"
 
@@ -63,8 +62,7 @@ git pull --ff-only origin "${BRANCH}"
 mkdir -p certs logs_mqtt
 
 cat > .env.backend <<EOF
-BACKEND_PUBLIC_PORT=${BACKEND_PUBLIC_PORT}
-BACKEND_BIND_ADDRESS=${BACKEND_BIND_ADDRESS}
+SANDBOX_PROXY_NETWORK=${SANDBOX_PROXY_NETWORK}
 BROKER=${BROKER}
 MQTT_PORT=${MQTT_PORT}
 CORS_ALLOWED_ORIGINS=${FRONTEND_URL}
@@ -98,8 +96,11 @@ if [ ! -f certs/amazon_ca.pem ] || [ ! -f certs/device.pem.crt ] || [ ! -f certs
   exit 1
 fi
 
-export BACKEND_PUBLIC_PORT
-export BACKEND_BIND_ADDRESS
+export SANDBOX_PROXY_NETWORK
+
+if ! docker network inspect "${SANDBOX_PROXY_NETWORK}" >/dev/null 2>&1; then
+  docker network create "${SANDBOX_PROXY_NETWORK}"
+fi
 
 docker compose up -d --build backend
 docker compose ps backend
@@ -107,4 +108,4 @@ docker logs --tail=80 cloud-monitoring-backend || true
 
 echo
 echo "Backend iniciado."
-echo "Health local: curl -I http://127.0.0.1:8008/login"
+echo "Health interno: docker compose exec -T backend curl -I http://127.0.0.1:8008/login"

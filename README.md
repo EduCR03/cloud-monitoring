@@ -334,22 +334,22 @@ window.CLOUDV2_API_BASE_URL = "https://api.seudominio.com";
 
 ## Deploy mais simples na AWS com Docker (recomendado)
 
-### Proxy oficial: Caddy
+### Proxy oficial: sandbox-proxy
 
-Este projeto assume Caddy como proxy HTTPS da EC2.
+Este projeto assume que o HTTPS publico da EC2 sandbox e gerido pelo `sandbox-proxy`.
 
 - O backend continua ouvindo HTTP interno na porta `8008`.
-- O Caddy faz TLS e encaminha para o backend.
-- O script antigo de HTTPS agora gera e valida bloco Caddyfile.
-- Nenhum script deste repo deve sobrescrever o Caddy compartilhado do Fleet.
+- O backend nao publica porta no host; o Compose usa `expose` e conecta o container a `proxy-net`.
+- O `sandbox-proxy` faz TLS e encaminha para `cloud-monitoring-backend:8008`.
+- Nenhum script deste repo deve sobrescrever o Caddy compartilhado do `sandbox-proxy`.
 
 Bloco Caddyfile minimo:
 
 ```caddyfile
-api.seudominio.com {
+back-cloud-monitor.duckdns.org, sentinel.soiltech.com.br {
     encode zstd gzip
 
-    reverse_proxy 127.0.0.1:8008 {
+    reverse_proxy cloud-monitoring-backend:8008 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
@@ -359,27 +359,19 @@ api.seudominio.com {
 }
 ```
 
-Se o Caddy roda em outro Docker stack, mantenha `BACKEND_BIND_ADDRESS=0.0.0.0` e use no Caddy o upstream que o container Caddy consegue alcançar.
-
-Se quiser conectar o backend direto na rede Docker do Caddy:
+Crie a rede compartilhada uma vez na EC2, se ela ainda nao existir:
 
 ```bash
-CADDY_DOCKER_NETWORK=proxy_default \
-docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build backend
+docker network create proxy-net
 ```
 
-Neste modo, o upstream no Caddy pode ser:
-
-```caddyfile
-reverse_proxy cloud-monitoring-backend:8008
-```
+O arquivo de requisitos para publicacao esta em `cloud-monitoring-sandbox-proxy.requirements.md`.
 
 Para gerar e validar o bloco:
 
 ```bash
-DOMAIN=api.seudominio.com \
+DOMAIN=sentinel.soiltech.com.br \
 FRONTEND_URL=https://SEU_FRONTEND.vercel.app \
-BACKEND_UPSTREAM=http://127.0.0.1:8008 \
 bash scripts/ec2-setup-https.sh
 ```
 
@@ -389,6 +381,7 @@ bash scripts/ec2-setup-https.sh
 git clone https://github.com/Monitoramento-de-Conectividade/cloud-monitoring.git
 cd cloud-monitoring
 bash scripts/ec2-install-docker.sh
+docker network create proxy-net || true
 cp .env.backend.example .env.backend
 mkdir -p certs logs_mqtt
 ```

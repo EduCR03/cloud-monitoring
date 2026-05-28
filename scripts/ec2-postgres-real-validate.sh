@@ -10,6 +10,7 @@ REQUIRE_EMPTY_POSTGRES="${REQUIRE_EMPTY_POSTGRES:-0}"
 CONFIRM_TARGET_TRUNCATE="${CONFIRM_TARGET_TRUNCATE:-0}"
 RUN_SMOKE_AFTER="${RUN_SMOKE_AFTER:-0}"
 SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:8008}"
+SANDBOX_PROXY_NETWORK="${SANDBOX_PROXY_NETWORK:-proxy-net}"
 VALIDATION_ID="${VALIDATION_ID:-$(date -u +%Y%m%d%H%M%S)}"
 REPORT_PATH="${REPORT_PATH:-/data/postgres-real-validation-${VALIDATION_ID}.json}"
 BACKEND_STOPPED=0
@@ -22,6 +23,11 @@ fi
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker nao encontrado. Rode scripts/ec2-install-docker.sh primeiro." >&2
   exit 1
+fi
+
+export SANDBOX_PROXY_NETWORK
+if ! docker network inspect "${SANDBOX_PROXY_NETWORK}" >/dev/null 2>&1; then
+  docker network create "${SANDBOX_PROXY_NETWORK}"
 fi
 
 if [ -z "${DATABASE_URL:-}" ]; then

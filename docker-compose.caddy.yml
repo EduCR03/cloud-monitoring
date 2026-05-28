@@ -2,9 +2,9 @@ services:
   backend:
     networks:
       - default
-      - caddy_proxy
+      - proxy-net
 
 networks:
-  caddy_proxy:
+  proxy-net:
     external: true
-    name: "${CADDY_DOCKER_NETWORK:-proxy_default}"
+    name: "${SANDBOX_PROXY_NETWORK:-proxy-net}"

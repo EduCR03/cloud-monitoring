@@ -13,7 +13,7 @@ New-Item -ItemType Directory -Force -Path $resolvedDataDir | Out-Null
 
 $env:CLOUDV2_DATA_DIR = $resolvedDataDir
 $env:SQLITE_DB_PATH = Join-Path $resolvedDataDir "telemetry.sqlite3"
-$env:BACKEND_PUBLIC_PORT = [string]$BackendPort
+$env:DASHBOARD_PORT = [string]$BackendPort
 $env:DASHBOARD_HOST = "127.0.0.1"
 $env:AUTH_BASE_URL = "http://127.0.0.1:$BackendPort"
 $env:AUTH_COOKIE_SECURE = "0"
