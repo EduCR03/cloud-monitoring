@@ -3500,9 +3500,26 @@ function canShowTp557ErrorsPanel(pivot) {
   return role === "admin" && pivotId === TEMP_TP557_ERRORS_PIVOT_ID;
 }
 
+function syncTp557ErrorsOption(allowed) {
+  if (!ui.timelineTopicSelect) return;
+  let option = ui.timelineTopicSelect.querySelector(`option[value="${TEMP_TP557_ERRORS_TOPIC}"]`);
+  if (allowed) {
+    if (!option) {
+      option = document.createElement("option");
+      option.value = TEMP_TP557_ERRORS_TOPIC;
+      option.textContent = TEMP_TP557_ERRORS_TOPIC;
+      ui.timelineTopicSelect.appendChild(option);
+    }
+    option.hidden = false;
+    option.disabled = false;
+    return;
+  }
+  if (option) option.remove();
+}
+
 function syncTp557ErrorsPanel(pivot) {
   const allowed = canShowTp557ErrorsPanel(pivot);
-  if (ui.timelineTp557ErrorsOption) ui.timelineTp557ErrorsOption.hidden = !allowed;
+  syncTp557ErrorsOption(allowed);
   if (!allowed && state.timelineTopicFilter === TEMP_TP557_ERRORS_TOPIC) {
     state.timelineTopicFilter = "global";
     setTimelinePageForFilter("global", 1);
