@@ -13,7 +13,6 @@
 | Dominio | Servico destino | Porta | Observacao |
 |---|---|---:|---|
 | sentinel.soiltech.com.br | cloud-monitoring-backend | 8008 | Dominio principal da API/dashboard |
-| back-cloud-monitor.duckdns.org | cloud-monitoring-backend | 8008 | Dominio alternativo legado |
 
 ## Servicos publicados
 
@@ -38,7 +37,7 @@
 ## Bloco Caddy sugerido
 
 ```caddyfile
-back-cloud-monitor.duckdns.org, sentinel.soiltech.com.br {
+sentinel.soiltech.com.br {
     encode zstd gzip
 
     reverse_proxy cloud-monitoring-backend:8008 {
