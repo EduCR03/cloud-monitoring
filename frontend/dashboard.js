@@ -164,6 +164,7 @@ const ui = HAS_DOM
       timelinePageInfo: document.getElementById("timelinePageInfo"),
       timelineTopicSelect: document.getElementById("timelineTopicSelect"),
       timelineDownloadTxt: document.getElementById("timelineDownloadTxt"),
+      timelineTp557ErrorsOption: document.getElementById("timelineTp557ErrorsOption"),
       tp557ErrorsPanel: document.getElementById("tp557ErrorsPanel"),
       tp557ErrorsDownloadBtn: document.getElementById("tp557ErrorsDownloadBtn"),
       tp557ErrorsHint: document.getElementById("tp557ErrorsHint"),
@@ -301,6 +302,10 @@ const state = {
   auxRefreshPromise: null,
   authUserRole: "user",
   authUserEmail: "",
+  tp557ErrorEvents: [],
+  tp557ErrorCount: 0,
+  tp557ErrorLoading: false,
+  tp557ErrorError: "",
   pivotDeleteAllowed: false,
   adminUsers: [],
   summaryCardsHistoryPayload: null,
@@ -332,6 +337,8 @@ const API_STALE_RESPONSE_TTL_MS = 180000;
 const DASHBOARD_CACHE_STORAGE_PREFIX = "cloud-monitoring:get:";
 const DASHBOARD_CACHE_STORAGE_MAX_CHARS = 750000;
 const TEMP_TP557_ERRORS_PIVOT_ID = "soilteste_1";
+const TEMP_TP557_ERRORS_TOPIC = "tp557-errors";
+const TEMP_TP557_ERRORS_DATA_PATH = "/api/temp/soilteste-tp557-errors";
 const TEMP_TP557_ERRORS_DOWNLOAD_PATH = "/api/temp/soilteste-tp557-errors/download";
 const MODEM_RESET_ACK_MIN_FIRMWARE = [2, 8, 4];
 const DASHBOARD_TIMEZONE = "America/Sao_Paulo";
@@ -344,6 +351,7 @@ const CONNECTIVITY_EVENT_TOPIC_FILTERS = [
   { key: "cloudv2-error", label: "cloudv2-error" },
   { key: "cloudv2-scheduling", label: "cloudv2-scheduling" },
   { key: "pivot", label: "Pivot_id" },
+  { key: TEMP_TP557_ERRORS_TOPIC, label: "tp557-errors" },
 ];
 const CONNECTIVITY_EVENT_TOPIC_FILTER_KEYS = new Set(
   CONNECTIVITY_EVENT_TOPIC_FILTERS.map((item) => item.key)
@@ -1883,8 +1891,11 @@ function eventMatchesConnectivityTopicFilter(event, pivot, filterKey) {
 
 function getConnectivityEventsPanelFiltered(pivot, filterKey) {
   const events = Array.isArray((pivot || {}).timeline) ? pivot.timeline : [];
-  const maxEvents = state.timelinePageSize * 5;
   const key = normalizeConnectivityEventTopicFilter(filterKey);
+  if (key === TEMP_TP557_ERRORS_TOPIC) {
+    return canShowTp557ErrorsPanel(pivot) ? [...(state.tp557ErrorEvents || [])] : [];
+  }
+  const maxEvents = state.timelinePageSize * 5;
   const filteredEvents = key === "global"
     ? events
     : events.filter((event) => eventMatchesConnectivityTopicFilter(event, pivot, key));
@@ -3491,10 +3502,51 @@ function canShowTp557ErrorsPanel(pivot) {
 
 function syncTp557ErrorsPanel(pivot) {
   const allowed = canShowTp557ErrorsPanel(pivot);
+  if (ui.timelineTp557ErrorsOption) ui.timelineTp557ErrorsOption.hidden = !allowed;
+  if (!allowed && state.timelineTopicFilter === TEMP_TP557_ERRORS_TOPIC) {
+    state.timelineTopicFilter = "global";
+    setTimelinePageForFilter("global", 1);
+  }
   if (ui.tp557ErrorsPanel) ui.tp557ErrorsPanel.hidden = !allowed;
   if (ui.tp557ErrorsDownloadBtn) ui.tp557ErrorsDownloadBtn.disabled = !allowed;
   if (ui.tp557ErrorsHint && allowed) {
-    ui.tp557ErrorsHint.textContent = "Registro completo do topico tp557-errors.";
+    if (state.tp557ErrorLoading) {
+      ui.tp557ErrorsHint.textContent = "Carregando registros tp557-errors.";
+    } else if (state.tp557ErrorError) {
+      ui.tp557ErrorsHint.textContent = `Falha ao carregar tp557-errors: ${state.tp557ErrorError}`;
+    } else {
+      ui.tp557ErrorsHint.textContent = `Registros tp557-errors: ${Number(state.tp557ErrorCount || 0)}`;
+    }
+  }
+}
+
+async function refreshTp557ErrorsEvents() {
+  if (!canShowTp557ErrorsPanel(state.pivotData || {})) {
+    state.tp557ErrorEvents = [];
+    state.tp557ErrorCount = 0;
+    state.tp557ErrorLoading = false;
+    state.tp557ErrorError = "";
+    return;
+  }
+  state.tp557ErrorLoading = true;
+  state.tp557ErrorError = "";
+  try {
+    const pivotId = TEMP_TP557_ERRORS_PIVOT_ID;
+    const payload = await getJson(`${TEMP_TP557_ERRORS_DATA_PATH}?pivot_id=${encodeURIComponent(pivotId)}`, {
+      bypassInflight: true,
+      allowStale: false,
+      timeoutMs: 20000,
+      retryDelaysMs: [0],
+    });
+    const events = Array.isArray(payload.events) ? payload.events : [];
+    state.tp557ErrorEvents = events;
+    state.tp557ErrorCount = Number(payload.count ?? events.length) || events.length;
+  } catch (err) {
+    state.tp557ErrorEvents = [];
+    state.tp557ErrorCount = 0;
+    state.tp557ErrorError = String(err && err.message ? err.message : err || "erro");
+  } finally {
+    state.tp557ErrorLoading = false;
   }
 }
 
@@ -5266,13 +5318,21 @@ function renderTimeline(pivot) {
   const start = (activePage - 1) * state.timelinePageSize;
   const pageEvents = allEvents.slice(start, start + state.timelinePageSize);
   if (ui.timelineDownloadTxt) {
-    ui.timelineDownloadTxt.disabled = allEvents.length <= 0;
-    ui.timelineDownloadTxt.title = allEvents.length
+    ui.timelineDownloadTxt.disabled = activeFilter === TEMP_TP557_ERRORS_TOPIC
+      ? !canShowTp557ErrorsPanel(pivot)
+      : allEvents.length <= 0;
+    ui.timelineDownloadTxt.title = activeFilter === TEMP_TP557_ERRORS_TOPIC
+      ? "Baixar TXT completo do topico tp557-errors"
+      : allEvents.length
       ? "Baixar os eventos das 5 paginas deste topico"
       : "Nenhum evento para baixar";
   }
 
-  if (!pageEvents.length) {
+  if (activeFilter === TEMP_TP557_ERRORS_TOPIC && state.tp557ErrorLoading) {
+    ui.timelineList.innerHTML = `<div class="empty">Carregando tp557-errors.</div>`;
+  } else if (activeFilter === TEMP_TP557_ERRORS_TOPIC && state.tp557ErrorError) {
+    ui.timelineList.innerHTML = `<div class="empty">Falha ao carregar tp557-errors: ${escapeHtml(state.tp557ErrorError)}</div>`;
+  } else if (!pageEvents.length) {
     ui.timelineList.innerHTML = `<div class="empty">Nenhum evento disponível para este período.</div>`;
   } else {
     ui.timelineList.innerHTML = pageEvents
@@ -5417,8 +5477,8 @@ function renderPivotView() {
   renderPivotMetrics(pivot, displayStatus, quality, connectivitySummary);
   renderProbeDelayChart(pivot);
   renderRssiChart(pivot);
-  renderTimeline(pivot);
   syncTp557ErrorsPanel(pivot);
+  renderTimeline(pivot);
   renderCloud2Table(pivot);
   renderSettingsModalContent();
   renderShutdownsModalContent();
@@ -5568,6 +5628,9 @@ async function refreshPivot(options = {}) {
   const skipRender = !!options.skipRender;
   if (!state.selectedPivot) {
     state.pivotData = null;
+    state.tp557ErrorEvents = [];
+    state.tp557ErrorCount = 0;
+    state.tp557ErrorError = "";
     state.panelSessionMeta = null;
     state.panelRunMeta = state.rawState?.run || null;
     if (!skipRender) {
@@ -5600,6 +5663,7 @@ async function refreshPivot(options = {}) {
     state.panelRunMeta = state.rawState?.run || null;
   }
   checkPendingModemResetAcks();
+  await refreshTp557ErrorsEvents();
   if (!skipRender) {
     renderSessionControls();
     renderPivotView();
@@ -7283,16 +7347,29 @@ function wireEvents() {
     renderPivotView();
   });
   if (ui.timelineTopicSelect) {
-    ui.timelineTopicSelect.addEventListener("change", () => {
+    ui.timelineTopicSelect.addEventListener("change", async () => {
       const filterKey = normalizeConnectivityEventTopicFilter(ui.timelineTopicSelect.value);
       state.timelineTopicFilter = filterKey;
       setTimelinePageForFilter(filterKey, 1);
+      if (filterKey === TEMP_TP557_ERRORS_TOPIC) {
+        state.tp557ErrorLoading = true;
+        renderPivotView();
+        await refreshTp557ErrorsEvents();
+      }
       renderPivotView();
     });
   }
   if (ui.timelineDownloadTxt) {
-    ui.timelineDownloadTxt.addEventListener("click", () => {
+    ui.timelineDownloadTxt.addEventListener("click", async () => {
       const filterKey = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
+      if (filterKey === TEMP_TP557_ERRORS_TOPIC) {
+        try {
+          await downloadTp557ErrorsTxt();
+        } catch (err) {
+          showToast(`Falha ao baixar tp557-errors: ${err.message || err}`, "error", 5000);
+        }
+        return;
+      }
       downloadConnectivityEventsTxt(state.pivotData || {}, filterKey);
     });
   }

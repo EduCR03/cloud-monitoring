@@ -22,6 +22,7 @@ from backend.cloudv2_paths import DATA_SUBDIR, DEFAULT_WEB_DIR, LEGACY_WEB_DIRS,
 from backend.tp557_error_monitor import (
     TP557_ERROR_LOG_FILENAME,
     TP557_ERROR_PIVOT_ID,
+    list_tp557_error_events,
     read_tp557_error_log,
 )
 
@@ -1066,6 +1067,36 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                     200,
                     {
                         "runs": runs,
+                    },
+                )
+                return
+
+            if path == "/api/temp/soilteste-tp557-errors":
+                if not _is_admin_auth_context(auth_context):
+                    self._write_json(
+                        403,
+                        {
+                            "ok": False,
+                            "code": "admin_required",
+                            "message": "Acesso restrito ao administrador.",
+                        },
+                    )
+                    return
+
+                pivot_id = str((query.get("pivot_id") or [""])[0] or "").strip()
+                if pivot_id != TP557_ERROR_PIVOT_ID:
+                    self._write_json(404, {"ok": False, "error": "monitor temporario indisponivel"})
+                    return
+
+                events = list_tp557_error_events()
+                self._write_json(
+                    200,
+                    {
+                        "ok": True,
+                        "pivot_id": TP557_ERROR_PIVOT_ID,
+                        "topic": "tp557-errors",
+                        "events": events,
+                        "count": len(events),
                     },
                 )
                 return

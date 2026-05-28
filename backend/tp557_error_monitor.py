@@ -51,3 +51,56 @@ def read_tp557_error_log(log_dir="logs_mqtt"):
     with _write_lock:
         with open(path, "r", encoding="utf-8", errors="replace") as file:
             return file.read()
+
+
+def list_tp557_error_events(log_dir="logs_mqtt"):
+    content = read_tp557_error_log(log_dir=log_dir)
+    if not content.strip():
+        return []
+
+    events = []
+    chunks = content.split("\n---\n")
+    for index, chunk in enumerate(chunks):
+        raw_chunk = chunk.strip("\n")
+        if not raw_chunk.strip():
+            continue
+        lines = raw_chunk.splitlines()
+        timestamp = ""
+        topic = TP557_ERROR_TOPIC
+        payload_lines = []
+        reading_payload = False
+        for line in lines:
+            if reading_payload:
+                payload_lines.append(line)
+                continue
+            if line.startswith("timestamp="):
+                timestamp = line[len("timestamp=") :].strip()
+                continue
+            if line.startswith("topic="):
+                topic = line[len("topic=") :].strip() or TP557_ERROR_TOPIC
+                continue
+            if line == "payload:":
+                reading_payload = True
+
+        ts = 0.0
+        if timestamp:
+            try:
+                ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                ts = 0.0
+        payload = "\n".join(payload_lines)
+        events.append(
+            {
+                "id": f"tp557-errors-{index + 1}",
+                "type": "tp557_errors",
+                "topic": topic,
+                "source_topic": topic,
+                "ts": ts,
+                "at": timestamp,
+                "summary": "Mensagem recebida em tp557-errors.",
+                "raw_payload": payload,
+                "details": {"source_topic": topic, "raw_payload": payload},
+            }
+        )
+
+    return sorted(events, key=lambda item: float(item.get("ts") or 0), reverse=True)
