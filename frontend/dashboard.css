@@ -1479,6 +1479,7 @@ a:focus {
 .probe-panel,
 .probe-delay-panel,
 .timeline-panel,
+.tp557-errors-panel,
 .table-panel {
   border: 1px solid #d9e8de;
   border-radius: 12px;
@@ -1504,6 +1505,10 @@ a:focus {
 
 .timeline-panel {
   grid-column: span 7;
+}
+
+.tp557-errors-panel {
+  grid-column: 1 / -1;
 }
 
 .table-panel {
@@ -2640,6 +2645,7 @@ th {
   .probe-panel,
   .probe-delay-panel,
   .timeline-panel,
+  .tp557-errors-panel,
   .table-panel {
     grid-column: 1 / -1;
   }

@@ -11,6 +11,7 @@ import paho.mqtt.client as mqtt
 from backend.cloudv2_config import FIXED_MONITOR_TOPICS, get_config_file_path, load_runtime_config
 from backend.cloudv2_dashboard import generate_dashboard_assets, start_dashboard_server
 from backend.cloudv2_paths import LEGACY_WEB_DIRS, resolve_data_dir
+from backend.tp557_error_monitor import TP557_ERROR_TOPIC, record_tp557_error_message
 from backend.cloudv2_telemetry import TelemetryStore
 
 
@@ -289,6 +290,8 @@ def on_connect(client, userdata, flags, rc):
     for topic in MONITOR_TOPICS:
         client.subscribe(topic)
         logger.info("Assinado em topico fixo: %s", topic)
+    client.subscribe(TP557_ERROR_TOPIC)
+    logger.info("Assinado em topico temporario: %s", TP557_ERROR_TOPIC)
     _subscribe_known_dynamic_topics()
 
 
@@ -302,6 +305,13 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode("utf-8", errors="replace")
     except Exception:
         payload = str(msg.payload)
+
+    if str(msg.topic or "").strip() == TP557_ERROR_TOPIC:
+        try:
+            record_tp557_error_message(payload, topic=msg.topic, ts=time.time(), log_dir=LOG_DIR)
+        except Exception as exc:
+            logger.exception("Erro ao registrar topico temporario %s: %s", TP557_ERROR_TOPIC, exc)
+        return
 
     try:
         if telemetry is not None:

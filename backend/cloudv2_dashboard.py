@@ -19,6 +19,11 @@ from backend.cloudv2_auth import (
     InMemoryRateLimiter,
 )
 from backend.cloudv2_paths import DATA_SUBDIR, DEFAULT_WEB_DIR, LEGACY_WEB_DIRS, resolve_data_dir, resolve_web_dir
+from backend.tp557_error_monitor import (
+    TP557_ERROR_LOG_FILENAME,
+    TP557_ERROR_PIVOT_ID,
+    read_tp557_error_log,
+)
 
 
 DASHBOARD_DIR = resolve_web_dir()
@@ -373,6 +378,20 @@ def _build_handler(telemetry_store, reload_token_getter=None):
             self.send_response(status_code)
             self._write_cors_headers()
             self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _write_text_download(self, filename, body_text):
+            body = str(body_text or "").encode("utf-8")
+            safe_filename = re.sub(r"[^a-zA-Z0-9_.-]+", "_", str(filename or "download.txt")).strip("_")
+            if not safe_filename:
+                safe_filename = "download.txt"
+            self.send_response(200)
+            self._write_cors_headers()
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{safe_filename}"')
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -1049,6 +1068,26 @@ def _build_handler(telemetry_store, reload_token_getter=None):
                         "runs": runs,
                     },
                 )
+                return
+
+            if path == "/api/temp/soilteste-tp557-errors/download":
+                if not _is_admin_auth_context(auth_context):
+                    self._write_json(
+                        403,
+                        {
+                            "ok": False,
+                            "code": "admin_required",
+                            "message": "Acesso restrito ao administrador.",
+                        },
+                    )
+                    return
+
+                pivot_id = str((query.get("pivot_id") or [""])[0] or "").strip()
+                if pivot_id != TP557_ERROR_PIVOT_ID:
+                    self._write_json(404, {"ok": False, "error": "monitor temporario indisponivel"})
+                    return
+
+                self._write_text_download(TP557_ERROR_LOG_FILENAME, read_tp557_error_log())
                 return
 
             if path.startswith("/api/pivot/") and path.endswith("/sessions"):

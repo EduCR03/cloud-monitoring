@@ -164,6 +164,9 @@ const ui = HAS_DOM
       timelinePageInfo: document.getElementById("timelinePageInfo"),
       timelineTopicSelect: document.getElementById("timelineTopicSelect"),
       timelineDownloadTxt: document.getElementById("timelineDownloadTxt"),
+      tp557ErrorsPanel: document.getElementById("tp557ErrorsPanel"),
+      tp557ErrorsDownloadBtn: document.getElementById("tp557ErrorsDownloadBtn"),
+      tp557ErrorsHint: document.getElementById("tp557ErrorsHint"),
       cloud2Table: document.getElementById("cloud2Table"),
       toastRegion: document.getElementById("toastRegion"),
       sessionHint: document.getElementById("sessionHint"),
@@ -328,6 +331,8 @@ const API_GET_RETRY_DELAYS_MS = [0, 1200];
 const API_STALE_RESPONSE_TTL_MS = 180000;
 const DASHBOARD_CACHE_STORAGE_PREFIX = "cloud-monitoring:get:";
 const DASHBOARD_CACHE_STORAGE_MAX_CHARS = 750000;
+const TEMP_TP557_ERRORS_PIVOT_ID = "soilteste_1";
+const TEMP_TP557_ERRORS_DOWNLOAD_PATH = "/api/temp/soilteste-tp557-errors/download";
 const MODEM_RESET_ACK_MIN_FIRMWARE = [2, 8, 4];
 const DASHBOARD_TIMEZONE = "America/Sao_Paulo";
 const DASHBOARD_DATETIME_UTC_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
@@ -3478,6 +3483,60 @@ function downloadConnectivityEventsTxt(pivot, filterKey) {
   return true;
 }
 
+function canShowTp557ErrorsPanel(pivot) {
+  const role = String(state.authUserRole || "user").trim().toLowerCase();
+  const pivotId = text((pivot || {}).pivot_id || state.selectedPivot, "").trim().toLowerCase();
+  return role === "admin" && pivotId === TEMP_TP557_ERRORS_PIVOT_ID;
+}
+
+function syncTp557ErrorsPanel(pivot) {
+  const allowed = canShowTp557ErrorsPanel(pivot);
+  if (ui.tp557ErrorsPanel) ui.tp557ErrorsPanel.hidden = !allowed;
+  if (ui.tp557ErrorsDownloadBtn) ui.tp557ErrorsDownloadBtn.disabled = !allowed;
+  if (ui.tp557ErrorsHint && allowed) {
+    ui.tp557ErrorsHint.textContent = "Registro completo do topico tp557-errors.";
+  }
+}
+
+function resolveDownloadFilename(response, fallback) {
+  const header = response && typeof response.headers?.get === "function"
+    ? String(response.headers.get("Content-Disposition") || "")
+    : "";
+  const match = /filename="([^"]+)"/i.exec(header) || /filename=([^;]+)/i.exec(header);
+  const candidate = match ? String(match[1] || "").trim().replace(/^"|"$/g, "") : "";
+  return candidate || fallback;
+}
+
+async function downloadTp557ErrorsTxt() {
+  if (!HAS_DOM || !HAS_WINDOW || !canShowTp557ErrorsPanel(state.pivotData || {})) return false;
+  const pivotId = TEMP_TP557_ERRORS_PIVOT_ID;
+  const url = `${TEMP_TP557_ERRORS_DOWNLOAD_PATH}?pivot_id=${encodeURIComponent(pivotId)}`;
+  const response = await fetch(buildApiUrl(url), {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    let message = "";
+    try {
+      const payload = await response.json();
+      message = String(payload.error || payload.message || "").trim();
+    } catch (err) {
+      message = "";
+    }
+    throw new Error(message || `download_failed:${response.status}`);
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = resolveDownloadFilename(response, "soilteste_1_tp557-errors.txt");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+  return true;
+}
+
 function getSelectedPivotConfig() {
   const summary = (state.pivotData && typeof state.pivotData.summary === "object") ? state.pivotData.summary : {};
   const config = summary && typeof summary.pivot_config === "object" ? summary.pivot_config : {};
@@ -5279,6 +5338,7 @@ function renderPivotView() {
     clearConnectivitySegmentSelection();
     renderSettingsModalContent();
     renderShutdownsModalContent();
+    syncTp557ErrorsPanel(null);
     return;
   }
 
@@ -5358,6 +5418,7 @@ function renderPivotView() {
   renderProbeDelayChart(pivot);
   renderRssiChart(pivot);
   renderTimeline(pivot);
+  syncTp557ErrorsPanel(pivot);
   renderCloud2Table(pivot);
   renderSettingsModalContent();
   renderShutdownsModalContent();
@@ -7233,6 +7294,18 @@ function wireEvents() {
     ui.timelineDownloadTxt.addEventListener("click", () => {
       const filterKey = normalizeConnectivityEventTopicFilter(state.timelineTopicFilter);
       downloadConnectivityEventsTxt(state.pivotData || {}, filterKey);
+    });
+  }
+  if (ui.tp557ErrorsDownloadBtn) {
+    ui.tp557ErrorsDownloadBtn.addEventListener("click", async () => {
+      ui.tp557ErrorsDownloadBtn.disabled = true;
+      try {
+        await downloadTp557ErrorsTxt();
+      } catch (err) {
+        showToast(`Falha ao baixar tp557-errors: ${err.message || err}`, "error", 5000);
+      } finally {
+        syncTp557ErrorsPanel(state.pivotData || {});
+      }
     });
   }
 
